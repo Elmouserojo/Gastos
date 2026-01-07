@@ -27,7 +27,7 @@ class App {
             // 3. Configurar detección de conexión
             this.setupConnectionDetection();
             
-            // 4. Verificar si es la primera vez
+            // 4. Verificar si es la primera vez - SIN DATOS DE EJEMPLO
             await this.checkFirstTime();
             
             console.log('Aplicación iniciada correctamente');
@@ -61,13 +61,28 @@ class App {
         const transactions = await this.db.getAllTransactions();
         
         if (transactions.length === 0) {
-            // Agregar datos de ejemplo para primera vez
-            //await this.addSampleData();
-            this.ui.showNotification('¡Bienvenido!', 'info');
+            // ¡APP INICIA VACÍA! - Sin datos de ejemplo
+            // await this.addSampleData(); // COMENTADO PARA DEPLOY INICIAL
+            
+            // Solo mostrar mensaje de bienvenida
+            this.ui.showNotification('¡Bienvenido! Comienza registrando tu primera transacción', 'info');
         }
     }
 
-  
+    // Agregar datos de ejemplo - VACÍO PARA PRIMER DEPLOY
+    async addSampleData() {
+        // Esta función está VACÍA intencionalmente
+        // La aplicación inicia sin datos de ejemplo para el primer deploy
+        console.log('App configurada para iniciar sin datos de ejemplo - Primer deploy');
+        
+        // Array vacío - no se agregará ninguna transacción
+        const sampleData = [];
+        
+        for (const transaction of sampleData) {
+            await this.db.addTransaction(transaction);
+        }
+    }
+
     // Mostrar error fatal
     showFatalError() {
         document.body.innerHTML = `
