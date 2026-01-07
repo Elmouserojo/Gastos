@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /
+
+# Esta es una aplicación web personal, no queremos indexación
