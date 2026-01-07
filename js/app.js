@@ -62,56 +62,12 @@ class App {
         
         if (transactions.length === 0) {
             // Agregar datos de ejemplo para primera vez
-            await this.addSampleData();
-            this.ui.showNotification('¡Bienvenido! Se han agregado datos de ejemplo', 'info');
+            //await this.addSampleData();
+            this.ui.showNotification('¡Bienvenido!', 'info');
         }
     }
 
-    // Agregar datos de ejemplo
-    async addSampleData() {
-        const sampleData = [
-            {
-                type: 'income',
-                name: 'Cambio de aceite',
-                description: 'Cliente: Juan Pérez - Auto: Toyota Corolla',
-                amount: 85.50,
-                date: new Date().toISOString().split('T')[0]
-            },
-            {
-                type: 'income',
-                name: 'Reparación de frenos',
-                description: 'Pastillas y discos delanteros',
-                amount: 320.00,
-                date: new Date(Date.now() - 86400000).toISOString().split('T')[0] // Ayer
-            },
-            {
-                type: 'expense',
-                name: 'Compra de repuestos',
-                description: 'Filtros y bujías',
-                amount: 150.75,
-                date: new Date(Date.now() - 172800000).toISOString().split('T')[0] // Anteayer
-            },
-            {
-                type: 'expense',
-                name: 'Pago de luz',
-                description: 'Factura mensual del taller',
-                amount: 89.30,
-                date: new Date(Date.now() - 259200000).toISOString().split('T')[0] // Hace 3 días
-            },
-            {
-                type: 'income',
-                name: 'Alineación y balanceo',
-                description: '2 vehículos',
-                amount: 120.00,
-                date: new Date(Date.now() - 345600000).toISOString().split('T')[0] // Hace 4 días
-            }
-        ];
-        
-        for (const transaction of sampleData) {
-            await this.db.addTransaction(transaction);
-        }
-    }
-
+    
     // Mostrar error fatal
     showFatalError() {
         document.body.innerHTML = `
