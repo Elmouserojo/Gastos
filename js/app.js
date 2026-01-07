@@ -67,7 +67,17 @@ class App {
         }
     }
 
-    
+    // Agregar datos de ejemplo
+    async addSampleData() {
+        const sampleData = [
+            
+        ];
+        
+        for (const transaction of sampleData) {
+            await this.db.addTransaction(transaction);
+        }
+    }
+
     // Mostrar error fatal
     showFatalError() {
         document.body.innerHTML = `
