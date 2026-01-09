@@ -792,6 +792,20 @@ body {
     --border-color: #333333;
 }
 
+/* Tema claro forzado (aplicable con data-theme="light") */
+[data-theme="light"] {
+    /* Reaplicar variables de tema claro para que tengan prioridad sobre prefers-color-scheme */
+    --background-color: #ffffff;
+    --surface-color: #ffffff;
+    --surface-elevated: #f7f7f8;
+    --text-primary: #0b0b0b;
+    --text-secondary: #4a4a4a;
+    --border-color: #e0e0e0;
+    --shadow-1: 0 2px 6px rgba(11,11,11,0.06);
+    --shadow-2: 0 6px 14px rgba(11,11,11,0.08);
+    --shadow-3: 0 10px 30px rgba(11,11,11,0.10);
+}
+
 /* Botón alternar tema */
 .theme-toggle {
     position: fixed;

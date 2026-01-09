@@ -151,7 +151,7 @@ class UI {
             if (meta) meta.setAttribute('content','#121212');
         } else {
             // light / default
-            document.documentElement.removeAttribute('data-theme');
+            document.documentElement.setAttribute('data-theme', 'light');
             if (btn) {
                 btn.innerHTML = '<i class="material-icons">dark_mode</i>';
                 btn.setAttribute('title','Cambiar a modo oscuro');
