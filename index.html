@@ -13,6 +13,19 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <title>Cuentas Claras</title>
+    <script>
+        (function(){
+            try {
+                var saved = localStorage.getItem('theme');
+                var theme = saved || 'dark';
+                if (theme === 'dark') {
+                    document.documentElement.setAttribute('data-theme','dark');
+                }
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', theme === 'dark' ? '#121212' : '#6200ee');
+            } catch (e) { /* no-op */ }
+        })();
+    </script>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔧</text></svg>">
 </head>
@@ -41,8 +54,8 @@
 
     <!-- Contenido Principal -->
     <main class="main-content">
-        <button id="theme-toggle" class="icon-btn theme-toggle" title="Alternar tema" aria-label="Alternar tema">
-            <i class="material-icons">dark_mode</i>
+        <button id="theme-toggle" class="icon-btn theme-toggle" title="Tema: Oscuro" aria-label="Alternar tema" aria-pressed="true">
+            <i class="material-icons">light_mode</i>
         </button>
         <!-- Dashboard -->
         <section id="dashboard" class="page active">

@@ -122,14 +122,11 @@ class UI {
     // Inicializar tema (dark / light)
     initTheme() {
         const saved = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const theme = saved || (prefersDark ? 'dark' : 'light');
-        console.debug('initTheme, applying:', theme);
+        const theme = saved || 'dark'; // por defecto: oscuro
         this.applyTheme(theme, false);
     }
 
     applyTheme(theme, persist = true) {
-        console.debug('applyTheme:', theme);
         const btn = document.getElementById('theme-toggle');
         const meta = document.querySelector('meta[name="theme-color"]');
 
@@ -137,7 +134,7 @@ class UI {
             document.documentElement.setAttribute('data-theme', 'dark');
             if (btn) {
                 btn.innerHTML = '<i class="material-icons">light_mode</i>';
-                btn.setAttribute('title','Tema: Oscuro');
+                btn.setAttribute('title','Cambiar a modo claro');
                 btn.setAttribute('aria-pressed','true');
             }
             if (meta) meta.setAttribute('content','#121212');
@@ -146,7 +143,7 @@ class UI {
             document.documentElement.removeAttribute('data-theme');
             if (btn) {
                 btn.innerHTML = '<i class="material-icons">dark_mode</i>';
-                btn.setAttribute('title','Tema: Claro');
+                btn.setAttribute('title','Cambiar a modo oscuro');
                 btn.setAttribute('aria-pressed','false');
             }
             if (meta) meta.setAttribute('content','#6200ee');
@@ -158,7 +155,6 @@ class UI {
     toggleTheme() {
         const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
         const next = current === 'dark' ? 'light' : 'dark';
-        console.debug('toggleTheme current:', current, 'next:', next);
         this.applyTheme(next, true);
     }
 
