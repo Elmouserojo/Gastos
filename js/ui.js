@@ -13,6 +13,7 @@ class UI {
 
     // Inicializar UI
     async init() {
+        this.initTheme();
         await this.setupEventListeners();
         await this.loadDashboard();
         this.setupDateInputs();
@@ -80,6 +81,14 @@ class UI {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('date').value = today;
         document.getElementById('date').max = today;
+
+        // Botón alternar tema
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                this.toggleTheme();
+            });
+        }
     }
 
     // Configurar inputs de fecha
@@ -108,6 +117,42 @@ class UI {
                 startDateInput.value = endDateInput.value;
             }
         });
+    }
+
+    // Inicializar tema (modo oscuro/claro)
+    initTheme() {
+        const saved = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = saved || (prefersDark ? 'dark' : 'light');
+        this.applyTheme(theme, false);
+    }
+
+    applyTheme(theme, persist = true) {
+        const btn = document.getElementById('theme-toggle');
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            if (btn) {
+                btn.innerHTML = '<i class="material-icons">light_mode</i>';
+                btn.setAttribute('title','Cambiar a tema claro');
+                btn.setAttribute('aria-pressed','true');
+            }
+            if (meta) meta.setAttribute('content','#121212');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            if (btn) {
+                btn.innerHTML = '<i class="material-icons">dark_mode</i>';
+                btn.setAttribute('title','Cambiar a tema oscuro');
+                btn.setAttribute('aria-pressed','false');
+            }
+            if (meta) meta.setAttribute('content','#6200ee');
+        }
+        if (persist) localStorage.setItem('theme', theme);
+    }
+
+    toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        this.applyTheme(current === 'dark' ? 'light' : 'dark', true);
     }
 
     // Cambiar página

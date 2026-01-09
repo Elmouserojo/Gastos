@@ -781,3 +781,41 @@ body {
         box-shadow: 0 2px 4px rgba(0,0,0,0.3);
     }
 }
+
+/* Tema oscuro forzado (aplicable con data-theme="dark") */
+[data-theme="dark"] {
+    --background-color: #121212;
+    --surface-color: #1e1e1e;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b0b0;
+    --border-color: #333333;
+}
+
+/* Botón alternar tema */
+.theme-toggle {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 1100;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-1);
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+.theme-toggle:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+.theme-toggle .material-icons {
+    font-size: 20px;
+}
+
+/* Ajuste para modo oscuro del botón */
+[data-theme="dark"] .theme-toggle {
+    background-color: rgba(255,255,255,0.03);
+    color: var(--text-primary);
+}
