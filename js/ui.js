@@ -85,8 +85,18 @@ class UI {
         // Botón alternar tema
         const themeToggleBtn = document.getElementById('theme-toggle');
         if (themeToggleBtn) {
-            themeToggleBtn.addEventListener('click', () => {
+            console.debug('Attaching theme toggle listener to button', themeToggleBtn);
+            themeToggleBtn.addEventListener('click', (e) => {
+                console.debug('themeToggle clicked', e);
                 this.toggleTheme();
+            });
+            // Soporte por teclado (Enter / Space)
+            themeToggleBtn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    console.debug('themeToggle keydown', e.key);
+                    this.toggleTheme();
+                }
             });
         }
     }
