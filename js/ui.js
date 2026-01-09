@@ -9,12 +9,14 @@ class UI {
         this.selectedDate = null;
         this.currentMonth = new Date();
         this.editingId = null;
+        this.categories = []; // Cache de categorías
     }
 
     // Inicializar UI
     async init() {
         this.initTheme();
         await this.setupEventListeners();
+        await this.loadCategories(); // Cargar categorías
         await this.loadDashboard();
         this.setupDateInputs();
     }
@@ -33,10 +35,12 @@ class UI {
         const form = document.getElementById('transaction-form');
         form.addEventListener('submit', (e) => this.handleFormSubmit(e));
 
-        // Selector de tipo
+        // Selector de tipo - actualizar categorías cuando cambie
         document.querySelectorAll('.type-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                this.selectType(e.currentTarget.dataset.type);
+                const type = e.currentTarget.dataset.type;
+                this.selectType(type);
+                this.updateCategorySelect(type); // Actualizar categorías
             });
         });
 
@@ -99,6 +103,11 @@ class UI {
                 }
             });
         }
+
+        // Inicializar categorías después de cargarlas
+        setTimeout(() => {
+            this.setupCategorySelect();
+        }, 100);
     }
 
     // Configurar inputs de fecha
@@ -127,6 +136,88 @@ class UI {
                 startDateInput.value = endDateInput.value;
             }
         });
+    }
+
+    // Cargar categorías desde la base de datos
+    async loadCategories() {
+        try {
+            this.categories = await db.getAllCategories();
+            
+            // Si no hay categorías, inicializar las por defecto
+            if (this.categories.length === 0) {
+                await db.initDefaultCategories();
+                this.categories = await db.getAllCategories();
+            }
+            
+            console.log(`${this.categories.length} categorías cargadas`);
+        } catch (error) {
+            console.error('Error al cargar categorías:', error);
+            this.categories = [];
+        }
+    }
+
+    // Obtener categorías por tipo
+    getCategoriesByType(type) {
+        return this.categories.filter(cat => 
+            cat.type === type || cat.type === 'both'
+        );
+    }
+
+    // Obtener información de una categoría por ID
+    getCategoryInfo(categoryId) {
+        return this.categories.find(cat => cat.id === categoryId) || {
+            id: 'otros',
+            name: 'Otros',
+            color: '#9E9E9E',
+            icon: 'category'
+        };
+    }
+
+    // Configurar select de categorías en el formulario
+    setupCategorySelect() {
+        const categorySelect = document.getElementById('category');
+        
+        // Solo si existe el elemento
+        if (categorySelect) {
+            this.updateCategorySelect();
+        }
+    }
+
+    // Actualizar opciones del select de categorías
+    updateCategorySelect(selectedType = 'income') {
+        const categorySelect = document.getElementById('category');
+        if (!categorySelect) return;
+        
+        // Obtener categorías filtradas por tipo
+        const filteredCategories = this.getCategoriesByType(selectedType);
+        
+        // Guardar valor seleccionado actual
+        const currentValue = categorySelect.value;
+        
+        // Limpiar y agregar opciones
+        categorySelect.innerHTML = '';
+        
+        filteredCategories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            
+            // Estilo opcional con color
+            option.style.cssText = `
+                color: ${category.color};
+                font-weight: 500;
+            `;
+            
+            categorySelect.appendChild(option);
+        });
+        
+        // Restaurar valor seleccionado si existe en las nuevas opciones
+        if (currentValue && filteredCategories.some(cat => cat.id === currentValue)) {
+            categorySelect.value = currentValue;
+        } else if (filteredCategories.length > 0) {
+            // Seleccionar la primera por defecto
+            categorySelect.value = filteredCategories[0].id;
+        }
     }
 
     // Inicializar tema (dark / light)
@@ -288,8 +379,9 @@ class UI {
             description: document.getElementById('description').value.trim(),
             amount: parseFloat(document.getElementById('amount').value),
             date: document.getElementById('date').value,
+            category: document.getElementById('category') ? document.getElementById('category').value || 'otros' : 'otros', // Nueva línea
             id: document.getElementById('transaction-id').value || db.generateId()
-        };
+        }; 
         
         try {
             if (this.editingId) {
@@ -396,16 +488,23 @@ class UI {
                 year: 'numeric'
             });
             
+            // Obtener información de la categoría
+            const categoryInfo = this.getCategoryInfo(transaction.category);
             html += `
                 <div class="transaction-item ${isIncome ? 'income' : 'expense'}" 
                      data-id="${transaction.id}">
-                    <div class="transaction-icon">
-                        <i class="material-icons">${isIncome ? 'arrow_upward' : 'arrow_downward'}</i>
+                    <div class="transaction-icon" style="background-color: ${categoryInfo.color}20; color: ${categoryInfo.color}">
+                        <i class="material-icons">${categoryInfo.icon}</i>
                     </div>
                     <div class="transaction-info">
                         <h4>${transaction.name}</h4>
-                        ${transaction.description ? `<p>${transaction.description}</p>` : ''}
-                        <span class="transaction-date">${formattedDate}</span>
+                        <div class="transaction-meta">
+                            <span class="transaction-category" style="color: ${categoryInfo.color}">
+                                ${categoryInfo.name}
+                            </span>
+                            <span class="transaction-date">${formattedDate}</span>
+                        </div>
+                        ${transaction.description ? `<p class="transaction-description">${transaction.description}</p>` : ''}
                     </div>
                     <div class="transaction-amount">
                         <span>${isIncome ? '+' : '-'}${this.formatCurrency(transaction.amount)}</span>
@@ -419,7 +518,7 @@ class UI {
                         </div>
                     </div>
                 </div>
-            `;
+            `; 
         });
         
         container.innerHTML = html;
@@ -472,6 +571,15 @@ class UI {
             document.getElementById('description').value = transaction.description || '';
             document.getElementById('amount').value = transaction.amount;
             document.getElementById('date').value = transaction.date;
+            
+            // Actualizar categorías y seleccionar la correcta
+            this.updateCategorySelect(transaction.type);
+            
+            // Usar setTimeout para asegurar que el select se haya actualizado
+            setTimeout(() => {
+                const catEl = document.getElementById('category');
+                if (catEl) catEl.value = transaction.category || 'otros';
+            }, 50);
             
             // Mostrar botón eliminar
             document.getElementById('delete-btn').style.display = 'block';
@@ -528,6 +636,9 @@ class UI {
         this.selectType('income');
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('date').value = today;
+        
+        // Actualizar categorías para tipo income
+        this.updateCategorySelect('income');
         
         this.editingId = null;
         

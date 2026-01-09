@@ -19,6 +19,14 @@ class App {
             // 1. Inicializar base de datos
             await this.db.init();
             console.log('Base de datos lista');
+
+            // Inicializar categorías por defecto (si es necesario)
+            try {
+                await this.db.initDefaultCategories();
+                console.log('Categorías inicializadas');
+            } catch (e) {
+                console.warn('No se pudieron inicializar categorías por defecto:', e);
+            }
             
             // 2. Inicializar interfaz
             await this.ui.init();
