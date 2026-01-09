@@ -139,6 +139,7 @@ class UI {
     applyTheme(theme, persist = true) {
         const btn = document.getElementById('theme-toggle');
         const meta = document.querySelector('meta[name="theme-color"]');
+        console.debug('applyTheme: incoming theme ->', theme, 'current data-theme ->', document.documentElement.getAttribute('data-theme'));
 
         if (theme === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
@@ -159,12 +160,18 @@ class UI {
             if (meta) meta.setAttribute('content','#6200ee');
         }
 
-        if (persist) localStorage.setItem('theme', theme);
+        if (persist) {
+            localStorage.setItem('theme', theme);
+            console.debug('applyTheme: saved theme in localStorage ->', localStorage.getItem('theme'));
+        }
+
+        console.debug('applyTheme: resulting data-theme ->', document.documentElement.getAttribute('data-theme'));
     }
 
     toggleTheme() {
         const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
         const next = current === 'dark' ? 'light' : 'dark';
+        console.debug('toggleTheme: current ->', current, 'next ->', next);
         this.applyTheme(next, true);
     }
 
