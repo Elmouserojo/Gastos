@@ -791,6 +791,28 @@ body {
     --border-color: #333333;
 }
 
+/* Tema alto contraste (aplicable con data-theme="high-contrast") */
+[data-theme="high-contrast"] {
+    --background-color: #000000;
+    --surface-color: #000000;
+    --text-primary: #ffffff;
+    --text-secondary: #ffff00;
+    --primary-color: #ffff00;
+    --secondary-color: #00ffff;
+    --income-color: #00ff00;
+    --expense-color: #ff0000;
+    --border-color: #ffffff;
+    --shadow-1: none;
+    --shadow-2: none;
+    --shadow-3: none;
+}
+
+/* Ajustes de accesibilidad para alto contraste */
+[data-theme="high-contrast"] :focus-visible {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 3px;
+}
+
 /* Botón alternar tema */
 .theme-toggle {
     position: fixed;
@@ -818,4 +840,12 @@ body {
 [data-theme="dark"] .theme-toggle {
     background-color: rgba(255,255,255,0.03);
     color: var(--text-primary);
+}
+
+/* Ajuste para modo alto contraste del botón */
+[data-theme="high-contrast"] .theme-toggle {
+    background-color: transparent;
+    color: var(--primary-color);
+    box-shadow: none;
+}
 }

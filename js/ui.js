@@ -119,40 +119,73 @@ class UI {
         });
     }
 
-    // Inicializar tema (modo oscuro/claro)
+    // Inicializar tema (dark / high-contrast)
     initTheme() {
         const saved = localStorage.getItem('theme');
         const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const theme = saved || (prefersDark ? 'dark' : 'light');
-        this.applyTheme(theme, false);
+        const theme = saved || (prefersDark ? 'dark' : null);
+        if (theme) {
+            this.applyTheme(theme, false);
+        } else {
+            // Estado por defecto: sin tema forzado (claro), preparar botón para activar oscuro
+            const btn = document.getElementById('theme-toggle');
+            if (btn) {
+                btn.innerHTML = '<i class="material-icons">dark_mode</i>';
+                btn.setAttribute('title','Activar modo oscuro');
+                btn.setAttribute('aria-pressed','false');
+            }
+        }
     }
 
     applyTheme(theme, persist = true) {
         const btn = document.getElementById('theme-toggle');
         const meta = document.querySelector('meta[name="theme-color"]');
+
         if (theme === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
             if (btn) {
-                btn.innerHTML = '<i class="material-icons">light_mode</i>';
-                btn.setAttribute('title','Cambiar a tema claro');
+                // Mostrar icono que sugiere cambiar a alto contraste
+                btn.innerHTML = '<i class="material-icons">contrast</i>';
+                btn.setAttribute('title','Cambiar a alto contraste');
                 btn.setAttribute('aria-pressed','true');
             }
             if (meta) meta.setAttribute('content','#121212');
+        } else if (theme === 'high-contrast') {
+            document.documentElement.setAttribute('data-theme', 'high-contrast');
+            if (btn) {
+                // Mostrar icono que sugiere cambiar a modo oscuro
+                btn.innerHTML = '<i class="material-icons">dark_mode</i>';
+                btn.setAttribute('title','Cambiar a modo oscuro');
+                btn.setAttribute('aria-pressed','true');
+            }
+            if (meta) meta.setAttribute('content','#000000');
         } else {
+            // light / default
             document.documentElement.removeAttribute('data-theme');
             if (btn) {
                 btn.innerHTML = '<i class="material-icons">dark_mode</i>';
-                btn.setAttribute('title','Cambiar a tema oscuro');
+                btn.setAttribute('title','Activar modo oscuro');
                 btn.setAttribute('aria-pressed','false');
             }
             if (meta) meta.setAttribute('content','#6200ee');
         }
+
         if (persist) localStorage.setItem('theme', theme);
     }
 
     toggleTheme() {
-        const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-        this.applyTheme(current === 'dark' ? 'light' : 'dark', true);
+        const current = document.documentElement.getAttribute('data-theme');
+        // Cicla solo entre dark <-> high-contrast
+        if (current === 'high-contrast') {
+            this.applyTheme('dark', true);
+        } else {
+            // Si está en 'dark' o en ningún tema, ir a 'high-contrast'
+            if (current === 'dark') {
+                this.applyTheme('high-contrast', true);
+            } else {
+                this.applyTheme('dark', true);
+            }
+        }
     }
 
     // Cambiar página
