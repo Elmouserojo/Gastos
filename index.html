@@ -1,255 +1,152 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Configuración PWA -->
-    <meta name="theme-color" content="#6200ee">
-    <meta name="description" content="Gestión de gastos e ingresos para taller">
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Cuentas Claras</title>
+    
+    <meta name="theme-color" content="#bb86fc">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="icon" href="data:,"> <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
-        (function(){
-            try {
-                var saved = localStorage.getItem('theme');
-                var theme = saved || 'dark';
-                if (theme === 'dark' || theme === 'light') {
-                    document.documentElement.setAttribute('data-theme', theme);
-                }
-                var meta = document.querySelector('meta[name="theme-color"]');
-                if (meta) meta.setAttribute('content', theme === 'dark' ? '#121212' : '#6200ee');
-            } catch (e) { /* no-op */ }
-        })();
+        // Evitar parpadeo de tema
+        const savedTheme = localStorage.getItem('app-theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
     </script>
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔧</text></svg>">
+
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Navegación -->
+
+    <button id="theme-toggle" class="theme-toggle" style="position: fixed; top: 15px; right: 15px; z-index: 1000; background: none; border: none; cursor: pointer;">
+        <span class="material-icons">light_mode</span>
+    </button>
+
+    <main class="main-content">
+        <div id="app">
+            
+            <section id="dashboard" class="page active">
+                <div class="header"><h1>Resumen</h1></div>
+
+                <div class="balance-container">
+                    <div class="balance-card total">
+                        <p>Balance Total</p>
+                        <h2 id="total-balance">$ 0,00</h2>
+                    </div>
+                    <div class="balance-card income">
+                        <p>Ingresos</p>
+                        <h2 id="total-income">$ 0,00</h2>
+                    </div>
+                    <div class="balance-card expense">
+                        <p>Gastos</p>
+                        <h2 id="total-expense">$ 0,00</h2>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <h3>Gastos por Categoría</h3>
+                        <div style="position: relative; height: 250px;">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Movimientos Recientes</h3>
+                        <div id="recent-list" class="transaction-list">
+                            </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="transactions" class="page">
+                <div class="header"><h1>Añadir Movimiento</h1></div>
+                <div class="card">
+                    <form id="transaction-form">
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display:block; margin-bottom:5px;">Concepto</label>
+                            <input type="text" name="name" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display:block; margin-bottom:5px;">Monto</label>
+                            <input type="number" name="amount" step="0.01" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display:block; margin-bottom:5px;">Tipo</label>
+                            <select name="type" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;">
+                                <option value="egreso">Gasto</option>
+                                <option value="ingreso">Ingreso</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="display:block; margin-bottom:5px;">Categoría</label>
+                            <select name="category" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;">
+                                <option value="Comida">Comida</option>
+                                <option value="Local">Local</option>
+                                <option value="Ventas">Ventas</option>
+                                <option value="Repuestos">Repuestos</option>
+                                <option value="Otros">Otros</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary">Guardar Movimiento</button>
+                    </form>
+                </div>
+            </section>
+
+            <section id="calendar" class="page">
+                <div class="header"><h1>Calendario</h1></div>
+                <div id="calendar-container" class="card"></div>
+                <div id="day-detail"></div>
+            </section>
+
+            <section id="settings" class="page">
+                <div class="header"><h1>Guardado</h1></div>
+                <div class="card">
+                    <h3>Copia de Seguridad</h3>
+                    <p style="font-size: 13px; opacity: 0.7; margin: 10px 0 20px;">Gestiona tus datos exportando o importando archivos JSON.</p>
+                    <button class="btn-primary" onclick="backupSystem.exportToJSON()" style="margin-bottom: 10px;">
+                        <i class="material-icons" style="vertical-align: middle; font-size: 18px;">download</i> Exportar Datos
+                    </button>
+                    <input type="file" id="importFile" onchange="backupSystem.importFromJSON(this.files[0])" style="display:none">
+                    <button class="btn-primary" style="background:transparent; border:1px solid var(--primary-color); color:var(--primary-color);" onclick="document.getElementById('importFile').click()">
+                        <i class="material-icons" style="vertical-align: middle; font-size: 18px;">upload</i> Importar Datos
+                    </button>
+                </div>
+            </section>
+        </div>
+    </main>
+
     <nav class="navbar">
         <div class="nav-container">
-            <button class="nav-btn" data-page="dashboard" title="Dashboard">
+            <button class="nav-btn active" data-page="dashboard">
                 <i class="material-icons">dashboard</i>
-                <span>Resumen</span>
+                <span>Inicio</span>
             </button>
-            <button class="nav-btn" data-page="transactions" title="Transacciones">
-                <i class="material-icons">list</i>
-                <span>Lista</span>
-            </button>   
-            <button class="nav-btn add-btn" data-page="add" title="Agregar">
-                <i class="material-icons">add</i>
-                <span>Nuevo</span>
+            <button class="nav-btn" data-page="transactions">
+                <i class="material-icons">add_circle</i>
+                <span>Añadir</span>
             </button>
-            <button class="nav-btn" data-page="calendar" title="Calendario">
-                <i class="material-icons">calendar_today</i>
+            <button class="nav-btn" data-page="calendar">
+                <i class="material-icons">calendar_month</i>
                 <span>Calendario</span>
+            </button>
+            <button class="nav-btn" data-page="settings">
+                <i class="material-icons">save</i>
+                <span>Guardado</span>
             </button>
         </div>
     </nav>
 
-    <!-- Contenido Principal -->
-    <main class="main-content">
-        <button id="theme-toggle" class="icon-btn theme-toggle" title="Tema: Oscuro" aria-label="Alternar tema" aria-pressed="true">
-            <i class="material-icons">light_mode</i>
-        </button>
-        <!-- Dashboard -->
-        <section id="dashboard" class="page active">
-            <div class="header">
-                <h1>Cuentas Claras</h1>
-                <div class="balance-container">
-                    <div class="balance-card income">
-                        <i class="material-icons">arrow_upward</i>
-                        <div>
-                            <p>Ingresos</p>
-                            <h2 id="total-income">$0.00</h2>
-                        </div>
-                    </div>
-                    <div class="balance-card expense">
-                        <i class="material-icons">arrow_downward</i>
-                        <div>
-                            <p>Gastos</p>
-                            <h2 id="total-expense">$0.00</h2>
-                        </div>
-                    </div>
-                    <div class="balance-card total">
-                        <i class="material-icons">account_balance</i>
-                        <div>
-                            <p>Balance</p>
-                            <h2 id="total-balance">$0.00</h2>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="recent-transactions">
-                <h3>Transacciones Recientes</h3>
-                <div id="recent-list" class="transaction-list">
-                    <!-- Se llena dinámicamente -->
-                </div>
-            </div>
-        </section>
-
-        <!-- Lista de Transacciones -->
-        <section id="transactions" class="page">
-            <div class="header">
-                <h1>Transacciones</h1>
-                <div class="controls">
-                    <div class="filter-controls">
-                        <select id="filter-type" class="filter-select">
-                            <option value="all">Todos</option>
-                            <option value="income">Ingresos</option>
-                            <option value="expense">Gastos</option>
-                        </select>
-                        <input type="text" id="search-input" class="search-input" placeholder="Buscar...">
-                    </div>
-                    <div class="date-filter">
-                        <input type="date" id="start-date" class="date-input">
-                        <span>a</span>
-                        <input type="date" id="end-date" class="date-input">
-                    </div>
-                </div>
-            </div>
-            <div id="transactions-list" class="transaction-list">
-                <!-- Se llena dinámicamente -->
-            </div>
-        </section>
-
-        <!-- Formulario para Agregar/Editar -->
-        <section id="add" class="page">
-            <div class="header">
-                <h1 id="form-title">Nueva Transacción</h1>
-            </div>
-            
-            <form id="transaction-form" class="transaction-form">
-                <input type="hidden" id="transaction-id" value="">
-                
-                <!-- Tipo -->
-                <div class="type-selector">
-                    <button type="button" class="type-btn active" data-type="income">
-                        <i class="material-icons">arrow_upward</i>
-                        <span>Ingreso</span>
-                    </button>
-                    <button type="button" class="type-btn" data-type="expense">
-                        <i class="material-icons">arrow_downward</i>
-                        <span>Gasto</span>
-                    </button>
-                    <input type="hidden" id="type" name="type" value="income" required>
-                </div>
-                
-                <!-- Campos del formulario -->
-                <div class="form-group">
-                    <label for="name">
-                        <i class="material-icons">title</i>
-                        Nombre *
-                    </label>
-                    <input type="text" id="name" name="name" required maxlength="50" placeholder="Ej: Venta de repuestos">
-                    <div class="error-message" id="name-error"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="description">
-                        <i class="material-icons">description</i>
-                        Descripción (opcional)
-                    </label>
-                    <textarea id="description" name="description" rows="3" 
-                              placeholder="Detalles adicionales..."></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="amount">
-                        <i class="material-icons">attach_money</i>
-                        Monto *
-                    </label>
-                    <input type="number" id="amount" name="amount" required min="0.01" step="0.01" 
-                           placeholder="0.00">
-                    <div class="error-message" id="amount-error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="category">
-                        <i class="material-icons">label</i>
-                        Categoría
-                    </label>
-                    <select id="category" name="category"></select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="date">
-                        <i class="material-icons">date_range</i>
-                        Fecha *
-                    </label>
-                    <input type="date" id="date" name="date" required>
-                </div>
-                
-                <!-- Botones del formulario -->
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="material-icons">save</i>
-                        Guardar
-                    </button>
-                    <button type="button" id="cancel-btn" class="btn btn-secondary">
-                        <i class="material-icons">close</i>
-                        Cancelar
-                    </button>
-                    <button type="button" id="delete-btn" class="btn btn-danger" style="display: none;">
-                        <i class="material-icons">delete</i>
-                        Eliminar
-                    </button>
-                </div>
-            </form>
-        </section>
-
-        <!-- Calendario -->
-        <section id="calendar" class="page">
-            <div class="header">
-                <h1>Calendario</h1>
-                <div class="calendar-controls">
-                    <button id="prev-month" class="icon-btn">
-                        <i class="material-icons">chevron_left</i>
-                    </button>
-                    <h2 id="current-month">Mes Año</h2>
-                    <button id="next-month" class="icon-btn">
-                        <i class="material-icons">chevron_right</i>
-                    </button>
-                </div>
-            </div>
-            
-            <div id="calendar-container">
-                <!-- Se llena dinámicamente -->
-            </div>
-            
-            <div id="day-transactions" class="day-transactions">
-                <h3 id="selected-date-title">Seleccione un día</h3>
-                <div id="day-transactions-list" class="transaction-list">
-                    <!-- Se llena dinámicamente -->
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- Notificaciones -->
     <div id="notification" class="notification"></div>
 
-    <!-- Scripts -->
-    <script src="js/database.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/calendar.js"></script>
-    <script src="js/app.js"></script>
-    
-    <script>
-        // Registrar Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(() => console.log('Service Worker registrado'))
-                    .catch(err => console.log('Error SW:', err));
-            });
-        }
-    </script>
+    <script src="database.js"></script>
+    <script src="ui.js"></script>
+    <script src="calendar.js"></script>
+    <script src="backup-system.js"></script>
+    <script src="sw-registration.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
