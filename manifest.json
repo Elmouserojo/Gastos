@@ -1,23 +1,60 @@
 {
-  "name": "Cuentas Claras - Finanza",
+  "name": "Cuentas Claras - Finanzas Personales",
   "short_name": "Cuentas Claras",
-  "description": "Gestión de gastos personales con categorías y calendario.",
-  "start_url": "/index.html",
+  "description": "Gestiona tus gastos e ingresos con total privacidad. Una herramienta potente, visual y offline para tu salud financiera.",
+  "id": "com.cuentasclaras.app.v1",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f0f2f5",
+  "display_override": ["window-controls-overlay", "minimal-ui"],
+  "background_color": "#121212",
   "theme_color": "#bb86fc",
   "orientation": "portrait",
+  "lang": "es",
+  "dir": "ltr",
+  "iarc_rating_id": "",
+  "categories": ["finance", "productivity", "lifestyle"],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
   "icons": [
     {
-      "src": "icons/icon-192x192.png",
+      "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-512x512.png",
+      "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nuevo Movimiento",
+      "short_name": "Añadir",
+      "description": "Añadir un nuevo gasto o ingreso rápidamente",
+      "url": "/#add",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/mobile.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Vista móvil de Cuentas Claras"
+    },
+    {
+      "src": "/screenshots/desktop.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Vista de escritorio de Cuentas Claras"
     }
   ]
 }
