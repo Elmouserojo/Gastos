@@ -51,7 +51,7 @@
     },
     {
       "src": "/screenshots/desktop.png",
-      "sizes": "1920x1080",
+      "sizes": "1920x992",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Vista de escritorio de Cuentas Claras"
