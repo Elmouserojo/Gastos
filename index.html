@@ -110,7 +110,13 @@
                     <button class="btn-primary" onclick="backupSystem.exportToJSON()" style="margin-bottom: 10px;">
                         <i class="material-icons" style="vertical-align: middle; font-size: 18px;">download</i> Exportar Datos
                     </button>
-                    <input type="file" id="importFile" onchange="backupSystem.importFromJSON(this.files[0])" style="display:none">
+                    <input 
+  type="file" 
+  id="importFile" 
+  accept=".json,application/json" 
+  onchange="backupSystem.importFromJSON(this.files[0])" 
+  style="display:none"
+>
                     <button class="btn-primary" style="background:transparent; border:1px solid var(--primary-color); color:var(--primary-color);" onclick="document.getElementById('importFile').click()">
                         <i class="material-icons" style="vertical-align: middle; font-size: 18px;">upload</i> Importar Datos
                     </button>

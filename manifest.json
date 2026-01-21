@@ -44,7 +44,7 @@
   "screenshots": [
     {
       "src": "/screenshots/mobile.png",
-      "sizes": "1080x1920",
+      "sizes": "494x803",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Vista móvil de Cuentas Claras"
@@ -55,6 +55,21 @@
       "type": "image/png",
       "form_factor": "wide",
       "label": "Vista de escritorio de Cuentas Claras"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/#import",
+      "accept": {
+        "application/json": [".json"]
+      },
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
