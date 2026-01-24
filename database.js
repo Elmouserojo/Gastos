@@ -1,107 +1,55 @@
 /**
- * Gestión de Base de Datos - IndexedDB
- * Almacena de forma persistente todas las transacciones de la aplicación.
+ * Core de Base de Datos - IndexedDB (Versión Dinámica)
  */
-
 class Database {
     constructor() {
         this.dbName = 'cuentas-claras-db';
-        this.dbVersion = 1;
-        this.storeName = 'transactions';
+        this.dbVersion = 3; // Subimos a v3 para incluir categorías personalizables
         this.db = null;
-        this.init();
     }
 
-    /**
-     * Inicializa la conexión con IndexedDB
-     */
     async init() {
+        if (this.db) return this.db;
+
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.dbVersion);
 
-            request.onerror = (event) => {
-                console.error("Error abriendo IndexedDB:", event.target.error);
-                reject(event.target.error);
-            };
+            request.onerror = (e) => reject(e.target.error);
 
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
-                // Creamos el almacén con un ID autoincremental
-                if (!db.objectStoreNames.contains(this.storeName)) {
-                    const store = db.createObjectStore(this.storeName, { keyPath: 'id', autoIncrement: true });
-                    // Creamos un índice por fecha para ordenar los movimientos
+
+                // 1. Tabla de Transacciones
+                if (!db.objectStoreNames.contains('transactions')) {
+                    const store = db.createObjectStore('transactions', { keyPath: 'id', autoIncrement: true });
                     store.createIndex('date', 'date', { unique: false });
+                }
+
+                // 2. Tabla de Presupuestos
+                if (!db.objectStoreNames.contains('budgets')) {
+                    db.createObjectStore('budgets', { keyPath: 'category' }); 
+                }
+
+                // 3. NUEVO: Tabla de Categorías Personalizables
+                if (!db.objectStoreNames.contains('categories')) {
+                    db.createObjectStore('categories', { keyPath: 'name' });
+                    // Usamos 'name' como clave única para evitar duplicados
                 }
             };
 
-            request.onsuccess = (event) => {
-                this.db = event.target.result;
-                console.log("✅ IndexedDB conectada");
+            request.onsuccess = (e) => {
+                this.db = e.target.result;
+                console.log("✅ Motor de Base de Datos listo (v3)");
                 resolve(this.db);
             };
         });
     }
 
-    /**
-     * Obtiene todos los movimientos ordenados por fecha (más recientes primero)
-     */
-    async getAllTransactions() {
-        return new Promise((resolve) => {
-            const transaction = this.db.transaction([this.storeName], 'readonly');
-            const store = transaction.objectStore(this.storeName);
-            const index = store.index('date');
-            const request = index.getAll();
-
-            request.onsuccess = () => {
-                // Devolvemos la lista invertida para que lo más nuevo aparezca arriba
-                resolve(request.result.reverse());
-            };
-        });
-    }
-
-    /**
-     * Guarda un nuevo movimiento
-     */
-    async addTransaction(data) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readwrite');
-            const store = transaction.objectStore(this.storeName);
-            const request = store.add(data);
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
-    }
-
-    /**
-     * Actualiza un movimiento existente
-     */
-    async updateTransaction(id, data) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readwrite');
-            const store = transaction.objectStore(this.storeName);
-            // Aseguramos que el objeto lleve el ID correcto
-            const request = store.put({ ...data, id: Number(id) });
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
-    }
-
-    /**
-     * Elimina un movimiento por su ID
-     */
-    async deleteTransaction(id) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readwrite');
-            const store = transaction.objectStore(this.storeName);
-            const request = store.delete(Number(id));
-
-            request.onsuccess = () => resolve(true);
-            request.onerror = () => reject(request.error);
-        });
+    async getStore(storeName, mode = 'readonly') {
+        const db = await this.init();
+        const transaction = db.transaction([storeName], mode);
+        return transaction.objectStore(storeName);
     }
 }
 
-// Instancia global para que todos los archivos puedan usarla
-window.db = new Database();
+window.dbEngine = new Database();

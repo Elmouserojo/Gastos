@@ -1,83 +1,70 @@
 /**
- * UI Manager - Versión con CRUD Completo
- * Maneja la visualización, edición, eliminación y navegación.
+ * UI Manager - Controlador Principal
+ * Maneja la navegación, el estado de la pantalla, los formularios y categorías dinámicas.
  */
-
-const CONFIG = {
-    CURRENCY_FORMAT: { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 },
-    CHART_COLORS: ['#bb86fc', '#03dac6', '#ff7597', '#ffde03', '#4caf50', '#ff9800']
-};
-
-class StateManager {
+class UI {
     constructor() {
+        // En el constructor solo guardamos elementos del DOM y estado básico
         this.state = {
             currentPage: 'dashboard',
             selectedDate: null,
-            editingId: null // Almacena el ID cuando estamos editando
+            editingId: null
         };
-    }
-    update(newState) { this.state = { ...this.state, ...newState }; }
-    getState() { return { ...this.state }; }
-}
 
-class NotificationManager {
-    constructor() { this.el = document.getElementById('notification'); }
-    show(message, type = 'info') {
-        if (!this.el) return;
-        this.el.textContent = message;
-        this.el.className = `notification active ${type}`;
-        setTimeout(() => this.el.classList.remove('active'), 3000);
-    }
-}
-
-class ChartManager {
-    constructor() { this.instance = null; }
-    updateChart(txs) {
-        const canvas = document.getElementById('categoryChart');
-        if (!canvas) return;
-        const expenses = txs.filter(t => t.type === 'egreso');
-        const dataMap = {};
-        expenses.forEach(t => dataMap[t.category] = (dataMap[t.category] || 0) + t.amount);
-
-        if (this.instance) this.instance.destroy();
-        this.instance = new Chart(canvas, {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(dataMap),
-                datasets: [{ data: Object.values(dataMap), backgroundColor: CONFIG.CHART_COLORS, borderWidth: 0 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-    }
-}
-
-class UI {
-    constructor() {
-        this.stateManager = new StateManager();
-        this.notificationManager = new NotificationManager();
-        this.chartManager = new ChartManager();
-        this.db = window.db;
         this.pages = document.querySelectorAll('.page');
         this.navLinks = document.querySelectorAll('.nav-btn');
     }
 
+    /**
+     * Inicialización de la interfaz
+     * Este método es llamado por app.js cuando todos los módulos (stores) ya existen.
+     */
     async init() {
+        // Vinculamos las dependencias ahora que estamos seguros de que existen en window
+        this.db = window.db;
+        this.categoryDb = window.categoryDb;
+        this.notifications = window.notifications;
+        this.charts = window.charts;
+
         this._setupTheme();
         this._setupNavigation();
         this._setupForm();
+        this._setupBudgetForm();
+        this._setupCategoryForm();
+        
+        // Carga inicial de datos dinámicos
+        await this.refreshCategorySelects(); 
         await this.loadDashboard();
     }
 
+    /**
+     * Configuración del tema (Oscuro/Claro) con ícono dinámico
+     */
     _setupTheme() {
         const toggle = document.getElementById('theme-toggle');
+        if (!toggle) return;
+
+        const iconEl = toggle.querySelector('.material-icons');
+
         const apply = (t) => {
             document.documentElement.setAttribute('data-theme', t);
             localStorage.setItem('app-theme', t);
+            
+            // Actualizamos el ícono: si está en claro, mostramos la luna; si está en oscuro, el sol.
+            if (iconEl) {
+                iconEl.textContent = t === 'light' ? 'dark_mode' : 'light_mode';
+            }
         };
+
+        // Inicializamos con el tema guardado o el preferido del sistema
         apply(localStorage.getItem('app-theme') || 'dark');
-        if (toggle) toggle.onclick = () => {
-            const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+
+        toggle.onclick = () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'light' ? 'dark' : 'light';
             apply(next);
+            
+            // Refrescamos los gráficos para que actualicen sus colores de texto
             this.loadDashboard();
         };
     }
@@ -86,23 +73,100 @@ class UI {
         this.navLinks.forEach(link => {
             link.onclick = (e) => {
                 e.preventDefault();
-                // Si cambiamos de página, cancelamos cualquier edición pendiente
-                if (this.stateManager.getState().editingId) this._cancelEdit();
+                if (this.state.editingId) this._cancelEdit();
                 this.switchPage(link.getAttribute('data-page'));
             };
         });
     }
 
-    switchPage(pageId) {
-    this.pages.forEach(p => p.classList.toggle('active', p.id === pageId));
-    this.navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('data-page') === pageId));
-    
-    // AGREGAMOS ESTO: Pone o saca la clase 'calendar-mode' al body
-    document.body.classList.toggle('calendar-mode', pageId === 'calendar');
+    _setupForm() {
+        const form = document.getElementById('transaction-form');
+        if (form) form.onsubmit = (e) => this._handleFormSubmit(e);
+    }
 
-    if (pageId === 'dashboard') this.loadDashboard();
-    if (pageId === 'calendar' && window.calendar) window.calendar.init();
-}
+    /**
+     * Configura el formulario para añadir categorías en Ajustes
+     */
+    _setupCategoryForm() {
+        const form = document.getElementById('category-form');
+        if (!form) return;
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('new-category-name');
+            const name = input.value.trim();
+
+            try {
+                await this.categoryDb.add(name);
+                this.notifications.show(`Categoría "${name}" añadida`, "success");
+                input.value = '';
+                
+                await this.refreshCategorySelects();
+                this.loadCategoriesSettingsList();
+            } catch (error) {
+                this.notifications.show(error, "error");
+            }
+        };
+    }
+
+    _setupBudgetForm() {
+        const form = document.getElementById('budget-form');
+        if (!form) return;
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const category = document.getElementById('budget-category').value;
+            const limit = parseFloat(document.getElementById('budget-limit').value);
+
+            try {
+                await window.budgetDb.save(category, limit);
+                this.notifications.show(`Límite para ${category} guardado`, "success");
+                form.reset();
+                this.loadBudgetsSettingsList();
+                this.loadDashboard(); 
+            } catch (error) {
+                this.notifications.show("Error al guardar presupuesto", "error");
+            }
+        };
+    }
+
+    /**
+     * Llena todos los selectores de la app con las categorías de la DB
+     */
+    async refreshCategorySelects() {
+        const categories = await this.categoryDb.getAll();
+        const selects = ['transaction-category', 'budget-category'];
+
+        selects.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+
+            const currentValue = el.value;
+            
+            el.innerHTML = categories.map(cat => 
+                `<option value="${cat}">${cat}</option>`
+            ).join('');
+
+            if (categories.includes(currentValue)) el.value = currentValue;
+        });
+    }
+
+    switchPage(pageId) {
+        this.pages.forEach(p => p.classList.toggle('active', p.id === pageId));
+        this.navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('data-page') === pageId));
+        
+        if (pageId === 'dashboard') this.loadDashboard();
+        if (pageId === 'calendar' && window.calendar) window.calendar.init();
+        
+        if (pageId === 'transactions') {
+            this.refreshCategorySelects();
+            this.loadBudgetsSettingsList();
+        }
+
+        if (pageId === 'settings') {
+            this.loadCategoriesSettingsList();
+        }
+    }
 
     async loadDashboard() {
         const txs = await this.db.getAllTransactions();
@@ -113,13 +177,87 @@ class UI {
         this._setText('total-income', this.formatCurrency(inc));
         this._setText('total-expense', this.formatCurrency(exp));
         
-        this.chartManager.updateChart(txs);
+        this.charts.updateCategoryChart(txs);
+        this.charts.updateEvolutionChart(txs);
+        
+        if (window.budgetManager) {
+            await window.budgetManager.renderProgress('budget-progress-container');
+        }
+        
         this._renderTransactionList('recent-list', txs.slice(0, 5));
     }
 
     /**
-     * Renderiza listas de transacciones con botones de acción
+     * Renderiza la lista de categorías en Ajustes con opción de borrar
      */
+    async loadCategoriesSettingsList() {
+        const container = document.getElementById('manage-categories-list');
+        if (!container) return;
+
+        const categories = await this.categoryDb.getAll();
+        
+        let html = '';
+        categories.forEach(cat => {
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; margin-bottom: 5px; border: 1px solid var(--border-color);">
+                    <span style="font-size: 13px;">${cat}</span>
+                    <button onclick="ui.deleteCategory('${cat}')" style="background: none; border: none; color: var(--expense-color); cursor: pointer;">
+                        <i class="material-icons" style="font-size: 18px;">delete_outline</i>
+                    </button>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    async deleteCategory(name) {
+        if (confirm(`¿Eliminar la categoría "${name}"? Nota: Los movimientos existentes no se borrarán.`)) {
+            await this.categoryDb.delete(name);
+            this.notifications.show("Categoría eliminada");
+            
+            await this.refreshCategorySelects();
+            this.loadCategoriesSettingsList();
+            this.loadDashboard();
+        }
+    }
+
+    async loadBudgetsSettingsList() {
+        const container = document.getElementById('active-budgets-list');
+        if (!container) return;
+
+        const budgets = await window.budgetDb.getAll();
+        
+        if (budgets.length === 0) {
+            container.innerHTML = '<p style="font-size:12px; opacity:0.5; text-align:center; padding:10px;">No hay límites configurados.</p>';
+            return;
+        }
+
+        let html = '<h4 style="font-size: 12px; margin-bottom: 10px; opacity: 0.7; border-top: 1px solid var(--border-color); padding-top:15px;">Límites Actuales:</h4>';
+        budgets.forEach(b => {
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border-color);">
+                    <div style="display:flex; flex-direction:column;">
+                        <span style="font-size: 13px; font-weight:bold;">${b.category}</span>
+                        <small style="opacity:0.7;">Límite: ${this.formatCurrency(b.limit)}</small>
+                    </div>
+                    <button onclick="ui.deleteBudget('${b.category}')" style="background: none; border: none; color: var(--expense-color); cursor: pointer; padding: 5px;">
+                        <i class="material-icons" style="font-size: 20px;">delete_outline</i>
+                    </button>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    async deleteBudget(category) {
+        if (confirm(`¿Eliminar el límite de presupuesto para ${category}?`)) {
+            await window.budgetDb.delete(category);
+            this.notifications.show("Presupuesto eliminado", "info");
+            this.loadBudgetsSettingsList();
+            this.loadDashboard();
+        }
+    }
+
     _renderTransactionList(containerId, txs) {
         const list = document.getElementById(containerId);
         if (!list) return;
@@ -145,46 +283,50 @@ class UI {
         `).join('') || '<p style="text-align:center; opacity:0.5; padding: 20px;">Sin movimientos</p>';
     }
 
-    // --- Funciones de Calendario ---
+    async _handleFormSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const d = new FormData(form);
+        
+        const txData = {
+            name: d.get('name'),
+            amount: parseFloat(d.get('amount')),
+            type: d.get('type'),
+            category: d.get('category'),
+            date: this.state.selectedDate || new Date().toISOString()
+        };
 
-    showDayDetail(date, transactions) {
-        const container = document.getElementById('day-detail');
-        if (!container) return;
+        try {
+            if (this.state.editingId) {
+                await this.db.updateTransaction(this.state.editingId, txData);
+                this.notifications.show('¡Actualizado con éxito!', 'success');
+            } else {
+                await this.db.addTransaction(txData);
+                this.notifications.show('¡Guardado con éxito!', 'success');
+            }
 
-        container.innerHTML = `
-            <div class="card" style="margin-top: 20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3 style="font-size: 16px;">${date.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}</h3>
-                    <button class="btn-primary" style="width:auto; padding: 6px 12px; font-size:12px;" onclick="ui.prepareAddForDate('${date.toISOString()}')">
-                        <i class="material-icons" style="font-size:14px; vertical-align:middle;">add</i> Añadir
-                    </button>
-                </div>
-                <div id="day-tx-list"></div>
-            </div>
-        `;
-        this._renderTransactionList('day-tx-list', transactions);
+            form.reset();
+            this._cancelEdit();
+            this.switchPage('dashboard');
+        } catch (error) {
+            this.notifications.show('Error al guardar', 'error');
+        }
     }
-
-    prepareAddForDate(dateISO) {
-        this.stateManager.update({ selectedDate: dateISO, editingId: null });
-        this.switchPage('transactions');
-        this._resetFormUI("Nuevo Movimiento", "Guardar Movimiento");
-    }
-
-    // --- Lógica de Edición y Eliminación ---
 
     async prepareEdit(id) {
         const txs = await this.db.getAllTransactions();
         const tx = txs.find(t => t.id === id);
         if (!tx) return;
 
-        this.stateManager.update({ editingId: id, selectedDate: tx.date });
+        this.state.editingId = id;
+        this.state.selectedDate = tx.date;
         
-        // Llenar formulario
         const form = document.getElementById('transaction-form');
         form.name.value = tx.name;
         form.amount.value = tx.amount;
         form.type.value = tx.type;
+        
+        await this.refreshCategorySelects();
         form.category.value = tx.category;
 
         this.switchPage('transactions');
@@ -194,14 +336,15 @@ class UI {
     async confirmDelete(id) {
         if (confirm("¿Estás seguro de que quieres eliminar este movimiento?")) {
             await this.db.deleteTransaction(id);
-            this.notificationManager.show("Movimiento eliminado", "error");
+            this.notifications.show("Movimiento eliminado", "error");
             await this.loadDashboard();
             if (window.calendar) window.calendar.init();
         }
     }
 
     _cancelEdit() {
-        this.stateManager.update({ editingId: null, selectedDate: null });
+        this.state.editingId = null;
+        this.state.selectedDate = null;
         this._resetFormUI("Añadir Movimiento", "Guardar Movimiento");
         document.getElementById('transaction-form').reset();
     }
@@ -213,46 +356,15 @@ class UI {
         if (btn) btn.textContent = btnText;
     }
 
-    // --- Manejo de Formulario ---
-
-    _setupForm() {
-        const form = document.getElementById('transaction-form');
-        if (form) form.onsubmit = (e) => this._handleFormSubmit(e);
+    formatCurrency(num) { 
+        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(num); 
     }
 
-    async _handleFormSubmit(e) {
-        e.preventDefault();
-        const form = e.target;
-        const d = new FormData(form);
-        const state = this.stateManager.getState();
-        
-        const txData = {
-            name: d.get('name'),
-            amount: parseFloat(d.get('amount')),
-            type: d.get('type'),
-            category: d.get('category'),
-            date: state.selectedDate || new Date().toISOString()
-        };
-
-        try {
-            if (state.editingId) {
-                await this.db.updateTransaction(state.editingId, txData);
-                this.notificationManager.show('¡Actualizado con éxito!', 'success');
-            } else {
-                await this.db.addTransaction(txData);
-                this.notificationManager.show('¡Guardado con éxito!', 'success');
-            }
-
-            form.reset();
-            this._cancelEdit();
-            this.switchPage('dashboard');
-        } catch (error) {
-            this.notificationManager.show('Error al guardar', 'error');
-        }
+    _setText(id, txt) { 
+        const el = document.getElementById(id); 
+        if (el) el.textContent = txt; 
     }
-
-    formatCurrency(num) { return new Intl.NumberFormat('es-AR', CONFIG.CURRENCY_FORMAT).format(num); }
-    _setText(id, txt) { const el = document.getElementById(id); if (el) el.textContent = txt; }
 }
 
+// Globalización
 window.ui = new UI();

@@ -8,9 +8,10 @@
     <meta name="theme-color" content="#bb86fc">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
-    <link rel="icon" href="data:,"> <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="icon" href="data:,"> 
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    
     <script>
         // Evitar parpadeo de tema
         const savedTheme = localStorage.getItem('app-theme') || 'dark';
@@ -46,6 +47,9 @@
                     </div>
                 </div>
 
+                <div class="card" id="budget-progress-container" style="margin-bottom: 20px;">
+                </div>
+
                 <div class="dashboard-grid">
                     <div class="card">
                         <h3>Gastos por Categoría</h3>
@@ -55,16 +59,25 @@
                     </div>
 
                     <div class="card">
+                        <h3>Evolución Mensual</h3>
+                        <div style="position: relative; height: 250px;">
+                            <canvas id="evolutionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
                         <h3>Movimientos Recientes</h3>
                         <div id="recent-list" class="transaction-list">
-                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
 
             <section id="transactions" class="page">
-                <div class="header"><h1>Añadir Movimiento</h1></div>
-                <div class="card">
+                <div class="header"><h1>Añadir</h1></div>
+                
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3>Añadir Movimiento</h3>
                     <form id="transaction-form">
                         <div class="form-group" style="margin-bottom: 15px;">
                             <label style="display:block; margin-bottom:5px;">Concepto</label>
@@ -83,16 +96,31 @@
                         </div>
                         <div class="form-group" style="margin-bottom: 20px;">
                             <label style="display:block; margin-bottom:5px;">Categoría</label>
-                            <select name="category" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;">
-                                <option value="Comida">Comida</option>
-                                <option value="Local">Local</option>
-                                <option value="Ventas">Ventas</option>
-                                <option value="Repuestos">Repuestos</option>
-                                <option value="Otros">Otros</option>
-                            </select>
+                            <select name="category" id="transaction-category" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;">
+                                </select>
                         </div>
                         <button type="submit" class="btn-primary">Guardar Movimiento</button>
                     </form>
+                </div>
+
+                <div class="card">
+                    <h3><i class="material-icons" style="vertical-align: middle; font-size: 20px;">ads_click</i> Definir Límite</h3>
+                    <form id="budget-form">
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display:block; margin-bottom:5px;">Categoría</label>
+                            <select id="budget-category" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;" required>
+                                </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display:block; margin-bottom:5px;">Límite Mensual ($)</label>
+                            <input type="number" id="budget-limit" placeholder="Ej: 5000" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;" required>
+                        </div>
+                        <button type="submit" class="btn-primary" style="width: 100%; background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color);">
+                            Guardar Presupuesto
+                        </button>
+                    </form>
+
+                    <div id="active-budgets-list" style="margin-top: 20px;"></div>
                 </div>
             </section>
 
@@ -103,20 +131,30 @@
             </section>
 
             <section id="settings" class="page">
-                <div class="header"><h1>Guardado</h1></div>
+                <div class="header"><h1>Ajustes</h1></div>
+                
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3><i class="material-icons" style="vertical-align: middle; font-size: 20px;">label</i> Mis Categorías</h3>
+                    <p style="font-size: 12px; opacity: 0.7; margin-bottom: 15px;">Añade o quita categorías para tus movimientos.</p>
+                    
+                    <form id="category-form" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <input type="text" id="new-category-name" placeholder="Ej: Mascotas" style="flex: 1; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;" required>
+                        <button type="submit" class="btn-primary" style="width: auto; padding: 0 15px;">
+                            <i class="material-icons">add</i>
+                        </button>
+                    </form>
+
+                    <div id="manage-categories-list">
+                        </div>
+                </div>
+
                 <div class="card">
                     <h3>Copia de Seguridad</h3>
                     <p style="font-size: 13px; opacity: 0.7; margin: 10px 0 20px;">Gestiona tus datos exportando o importando archivos JSON.</p>
                     <button class="btn-primary" onclick="backupSystem.exportToJSON()" style="margin-bottom: 10px;">
                         <i class="material-icons" style="vertical-align: middle; font-size: 18px;">download</i> Exportar Datos
                     </button>
-                    <input 
-  type="file" 
-  id="importFile" 
-  accept=".json,application/json" 
-  onchange="backupSystem.importFromJSON(this.files[0])" 
-  style="display:none"
->
+                    <input type="file" id="importFile" accept=".json,application/json" onchange="backupSystem.importFromJSON(this.files[0])" style="display:none">
                     <button class="btn-primary" style="background:transparent; border:1px solid var(--primary-color); color:var(--primary-color);" onclick="document.getElementById('importFile').click()">
                         <i class="material-icons" style="vertical-align: middle; font-size: 18px;">upload</i> Importar Datos
                     </button>
@@ -140,8 +178,8 @@
                 <span>Calendario</span>
             </button>
             <button class="nav-btn" data-page="settings">
-                <i class="material-icons">save</i>
-                <span>Guardado</span>
+                <i class="material-icons">settings</i>
+                <span>Ajustes</span>
             </button>
         </div>
     </nav>
@@ -149,7 +187,15 @@
     <div id="notification" class="notification"></div>
 
     <script src="database.js"></script>
+    <script src="transaction-store.js"></script>
+    <script src="budget-store.js"></script>
+    <script src="category-store.js"></script>
+
+    <script src="ui-notifications.js"></script>
+    <script src="ui-charts.js"></script>
+    <script src="ui-budget.js"></script> 
     <script src="ui.js"></script>
+
     <script src="calendar.js"></script>
     <script src="backup-system.js"></script>
     <script src="sw-registration.js"></script>

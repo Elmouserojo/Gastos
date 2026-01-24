@@ -5,12 +5,14 @@
     --background-color: #121212;
     --surface-color: #1e1e1e;
     --text-primary: #ffffff;
-    --text-secondary: #b0b0b0;
-    --border-color: #333333;
+    --text-secondary: #cccccc; /* Contraste mejorado */
+    --border-color: #383838;
     
-    --primary-color: #bb86fc; /* Púrpura suave */
-    --income-color: #81c784;  /* Verde */
-    --expense-color: #e57373; /* Rojo */
+    --primary-color: #bb86fc; 
+    --text-on-primary: #ffffff; /* Texto claro solicitado */
+    
+    --income-color: #81c784;  
+    --expense-color: #e57373; 
     
     --radius: 12px;
     --shadow: 0 4px 12px rgba(0,0,0,0.4);
@@ -20,43 +22,40 @@
    VARIABLES DE TEMA (Modo Claro Pastel con Alto Contraste)
    ========================================================================== */
 [data-theme="light"] {
-    /* Fondos Pastel */
-    --background-color: #f0f2f5; /* Un gris-azulado muy suave y limpio */
-    --surface-color: #ffffff;    /* Blanco puro para que las tarjetas resalten */
+    --background-color: #f0f2f5; 
+    --surface-color: #ffffff;    
     
-    /* Textos de Alto Contraste */
-    --text-primary: #1a1a1b;      /* Casi negro para lectura perfecta */
-    --text-secondary: #53575e;    /* Gris oscuro para detalles */
+    --text-primary: #1a1a1b;      
+    --text-secondary: #4a4d51; /* Contraste mejorado */
     
-    /* Bordes y Sombras */
-    --border-color: #d1d9e6;      /* Azulado suave para bordes */
-    --shadow: 0 8px 16px rgba(163, 177, 198, 0.3); /* Sombra suave tipo "Neumorfismo" */
+    --border-color: #d1d9e6;      
+    --shadow: 0 8px 16px rgba(0, 0, 0, 0.1); 
     
-    /* Colores de Acción (Más saturados para contraste) */
-    --primary-color: #4a148c;     /* Púrpura profundo (contrasta muy bien con pastel) */
-    --income-color: #1b5e20;      /* Verde bosque oscuro (muy legible) */
-    --expense-color: #b71c1c;     /* Rojo sangre oscuro (muy legible) */
+    --primary-color: #6200ee; /* Violeta más intenso para legibilidad */
+    --text-on-primary: #ffffff; /* Texto claro sobre violeta */
+    
+    --income-color: #1b5e20;      
+    --expense-color: #b71c1c;     
 }
 
 /* Corregir visibilidad de inputs y opciones en modo claro */
 [data-theme="light"] input, 
 [data-theme="light"] select {
-    background-color: #ffffff !important; /* Fondo blanco puro */
-    color: #1a1a1b !important;            /* Texto negro carbón */
-    border: 1px solid #d1d9e6 !important; /* Borde visible */
+    background-color: #ffffff !important;
+    color: #1a1a1b !important;
+    border: 1px solid #d1d9e6 !important;
 }
 
-/* Forzar que las opciones dentro del selector se vean negras */
 [data-theme="light"] select option {
     background-color: #ffffff !important;
     color: #1a1a1b !important;
 }
 
-/* Color del texto cuando el input está enfocado */
 [data-theme="light"] input:focus, 
 [data-theme="light"] select:focus {
     color: #000000 !important;
     background-color: #ffffff !important;
+    border-color: var(--primary-color) !important;
 }
 
 /* ==========================================================================
@@ -74,7 +73,7 @@ body {
     background-color: var(--background-color);
     color: var(--text-primary);
     line-height: 1.6;
-    padding-bottom: 80px; /* Espacio para la navbar inferior */
+    padding-bottom: 80px; 
 }
 
 .main-content {
@@ -150,8 +149,6 @@ body {
     opacity: 0.7;
 }
 
-
-
 /* ==========================================================================
    5. CALENDARIO (GRID)
    ========================================================================== */
@@ -176,7 +173,7 @@ body {
 
 .day-cell.selected {
     background: var(--primary-color) !important;
-    color: #000 !important;
+    color: var(--text-on-primary) !important; /* Texto claro */
     font-weight: bold;
 }
 
@@ -215,7 +212,8 @@ body {
 
 .btn-primary {
     width: 100%; padding: 14px; background: var(--primary-color);
-    color: #000; border: none; border-radius: 8px;
+    color: var(--text-on-primary); /* Texto claro */
+    border: none; border-radius: 8px;
     font-weight: bold; cursor: pointer;
 }
 
@@ -225,27 +223,25 @@ body {
     display: none; z-index: 3000; color: #fff;
 }
 .notification.active { display: block; }
-.notification.success { background: var(--income-color); color: #000; }
-.notification.error { background: var(--expense-color); }
+.notification.success { background: var(--income-color); color: #fff; } /* Texto claro */
+.notification.error { background: var(--expense-color); color: #fff; } /* Texto claro */
 
-body.calendar-mode::-webkit-scrollbar {
-    display: none;
+/* CORRECCIÓN: Visibilidad del botón de tema */
+#theme-toggle .material-icons {
+    color: var(--text-primary);
+    transition: color 0.3s ease;
 }
 
-/* Oculta la barra visualmente en Firefox y Edge */
+#theme-toggle:hover .material-icons {
+    color: var(--primary-color);
+}
+
 body.calendar-mode {
-    -ms-overflow-style: none;  /* IE y Edge */
-    scrollbar-width: none;     /* Firefox */
+    overflow: hidden; 
 }
 
-/* Opcional: Si querés que el calendario no se mueva NADA y quede fijo */
-body.calendar-mode {
-    overflow: hidden; /* Esto bloquea el scroll por completo */
-}
-
-/* Pero permitimos que el contenedor de detalles sí se pueda scrollear internamente */
 #day-detail {
-    max-height: 40vh; /* Ajusta este valor según prefieras */
+    max-height: 40vh;
     overflow-y: auto;
 }
 
