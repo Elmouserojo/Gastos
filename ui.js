@@ -4,7 +4,7 @@
  */
 class UI {
     constructor() {
-        // En el constructor solo guardamos elementos del DOM y estado básico
+        // Estado interno de la interfaz
         this.state = {
             currentPage: 'dashboard',
             selectedDate: null,
@@ -17,10 +17,9 @@ class UI {
 
     /**
      * Inicialización de la interfaz
-     * Este método es llamado por app.js cuando todos los módulos (stores) ya existen.
+     * Inyecta dependencias y prepara la carga inicial de datos.
      */
     async init() {
-        // Vinculamos las dependencias ahora que estamos seguros de que existen en window
         this.db = window.db;
         this.categoryDb = window.categoryDb;
         this.notifications = window.notifications;
@@ -32,13 +31,28 @@ class UI {
         this._setupBudgetForm();
         this._setupCategoryForm();
         
-        // Carga inicial de datos dinámicos
         await this.refreshCategorySelects(); 
         await this.loadDashboard();
     }
 
     /**
-     * Configuración del tema (Oscuro/Claro) con ícono dinámico
+     * Helper: Configuración visual de SweetAlert2 adaptada al tema actual
+     */
+    _getAlertConfig() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        return {
+            background: isDark ? '#1e1e1e' : '#ffffff',
+            color: isDark ? '#ffffff' : '#1a1a1b',
+            confirmButtonColor: isDark ? '#bb86fc' : '#6200ee', // Violeta según tema
+            cancelButtonColor: '#e57373', // Rojo para cancelar/peligro
+            reverseButtons: true,
+            backdrop: `rgba(0,0,0,0.5)`,
+            heightAuto: false // Evita saltos de scroll en móviles
+        };
+    }
+
+    /**
+     * Manejo del tema Claro/Oscuro con persistencia e iconos dinámicos
      */
     _setupTheme() {
         const toggle = document.getElementById('theme-toggle');
@@ -50,13 +64,12 @@ class UI {
             document.documentElement.setAttribute('data-theme', t);
             localStorage.setItem('app-theme', t);
             
-            // Actualizamos el ícono: si está en claro, mostramos la luna; si está en oscuro, el sol.
             if (iconEl) {
+                // Luna para ir a oscuro, Sol para ir a claro
                 iconEl.textContent = t === 'light' ? 'dark_mode' : 'light_mode';
             }
         };
 
-        // Inicializamos con el tema guardado o el preferido del sistema
         apply(localStorage.getItem('app-theme') || 'dark');
 
         toggle.onclick = () => {
@@ -64,7 +77,7 @@ class UI {
             const next = current === 'light' ? 'dark' : 'light';
             apply(next);
             
-            // Refrescamos los gráficos para que actualicen sus colores de texto
+            // Forzar refresco de gráficos para actualizar colores de fuente
             this.loadDashboard();
         };
     }
@@ -73,6 +86,7 @@ class UI {
         this.navLinks.forEach(link => {
             link.onclick = (e) => {
                 e.preventDefault();
+                // Si salimos de una página mientras editamos, cancelamos la edición
                 if (this.state.editingId) this._cancelEdit();
                 this.switchPage(link.getAttribute('data-page'));
             };
@@ -85,8 +99,18 @@ class UI {
     }
 
     /**
-     * Configura el formulario para añadir categorías en Ajustes
+     * Prepara el formulario para registrar un movimiento en una fecha específica
      */
+    prepareTransactionWithDate(date) {
+        this.state.selectedDate = date.toISOString();
+        this.switchPage('transactions');
+        
+        const formattedDate = date.toLocaleDateString();
+        // Feedback visual en el encabezado
+        this._resetFormUI(`Registrar para el ${formattedDate}`, "Guardar Movimiento");
+        this.notifications.show(`Fecha: ${formattedDate}`, "info");
+    }
+
     _setupCategoryForm() {
         const form = document.getElementById('category-form');
         if (!form) return;
@@ -100,7 +124,6 @@ class UI {
                 await this.categoryDb.add(name);
                 this.notifications.show(`Categoría "${name}" añadida`, "success");
                 input.value = '';
-                
                 await this.refreshCategorySelects();
                 this.loadCategoriesSettingsList();
             } catch (error) {
@@ -130,9 +153,6 @@ class UI {
         };
     }
 
-    /**
-     * Llena todos los selectores de la app con las categorías de la DB
-     */
     async refreshCategorySelects() {
         const categories = await this.categoryDb.getAll();
         const selects = ['transaction-category', 'budget-category'];
@@ -140,13 +160,8 @@ class UI {
         selects.forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
-
             const currentValue = el.value;
-            
-            el.innerHTML = categories.map(cat => 
-                `<option value="${cat}">${cat}</option>`
-            ).join('');
-
+            el.innerHTML = categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
             if (categories.includes(currentValue)) el.value = currentValue;
         });
     }
@@ -162,10 +177,7 @@ class UI {
             this.refreshCategorySelects();
             this.loadBudgetsSettingsList();
         }
-
-        if (pageId === 'settings') {
-            this.loadCategoriesSettingsList();
-        }
+        if (pageId === 'settings') this.loadCategoriesSettingsList();
     }
 
     async loadDashboard() {
@@ -183,38 +195,41 @@ class UI {
         if (window.budgetManager) {
             await window.budgetManager.renderProgress('budget-progress-container');
         }
-        
         this._renderTransactionList('recent-list', txs.slice(0, 5));
     }
 
-    /**
-     * Renderiza la lista de categorías en Ajustes con opción de borrar
-     */
     async loadCategoriesSettingsList() {
         const container = document.getElementById('manage-categories-list');
         if (!container) return;
-
         const categories = await this.categoryDb.getAll();
         
-        let html = '';
-        categories.forEach(cat => {
-            html += `
-                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; margin-bottom: 5px; border: 1px solid var(--border-color);">
-                    <span style="font-size: 13px;">${cat}</span>
-                    <button onclick="ui.deleteCategory('${cat}')" style="background: none; border: none; color: var(--expense-color); cursor: pointer;">
-                        <i class="material-icons" style="font-size: 18px;">delete_outline</i>
-                    </button>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
+        container.innerHTML = categories.map(cat => `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; margin-bottom: 5px; border: 1px solid var(--border-color);">
+                <span style="font-size: 13px;">${cat}</span>
+                <button onclick="ui.deleteCategory('${cat}')" style="background: none; border: none; color: var(--expense-color); cursor: pointer;">
+                    <i class="material-icons" style="font-size: 18px;">delete_outline</i>
+                </button>
+            </div>
+        `).join('');
     }
 
+    /**
+     * Eliminación de categoría con confirmación de SweetAlert2
+     */
     async deleteCategory(name) {
-        if (confirm(`¿Eliminar la categoría "${name}"? Nota: Los movimientos existentes no se borrarán.`)) {
+        const result = await Swal.fire({
+            title: '¿Eliminar categoría?',
+            text: `¿Estás seguro de eliminar "${name}"? Los movimientos existentes se mantendrán sin categoría asignada.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            ...this._getAlertConfig()
+        });
+
+        if (result.isConfirmed) {
             await this.categoryDb.delete(name);
-            this.notifications.show("Categoría eliminada");
-            
+            this.notifications.show("Categoría eliminada", "success");
             await this.refreshCategorySelects();
             this.loadCategoriesSettingsList();
             this.loadDashboard();
@@ -224,7 +239,6 @@ class UI {
     async loadBudgetsSettingsList() {
         const container = document.getElementById('active-budgets-list');
         if (!container) return;
-
         const budgets = await window.budgetDb.getAll();
         
         if (budgets.length === 0) {
@@ -233,24 +247,34 @@ class UI {
         }
 
         let html = '<h4 style="font-size: 12px; margin-bottom: 10px; opacity: 0.7; border-top: 1px solid var(--border-color); padding-top:15px;">Límites Actuales:</h4>';
-        budgets.forEach(b => {
-            html += `
-                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border-color);">
-                    <div style="display:flex; flex-direction:column;">
-                        <span style="font-size: 13px; font-weight:bold;">${b.category}</span>
-                        <small style="opacity:0.7;">Límite: ${this.formatCurrency(b.limit)}</small>
-                    </div>
-                    <button onclick="ui.deleteBudget('${b.category}')" style="background: none; border: none; color: var(--expense-color); cursor: pointer; padding: 5px;">
-                        <i class="material-icons" style="font-size: 20px;">delete_outline</i>
-                    </button>
+        html += budgets.map(b => `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border-color);">
+                <div style="display:flex; flex-direction:column;">
+                    <span style="font-size: 13px; font-weight:bold;">${b.category}</span>
+                    <small style="opacity:0.7;">Límite: ${this.formatCurrency(b.limit)}</small>
                 </div>
-            `;
-        });
+                <button onclick="ui.deleteBudget('${b.category}')" style="background: none; border: none; color: var(--expense-color); cursor: pointer; padding: 5px;">
+                    <i class="material-icons" style="font-size: 20px;">delete_outline</i>
+                </button>
+            </div>
+        `).join('');
         container.innerHTML = html;
     }
 
+    /**
+     * Eliminación de presupuesto con confirmación de SweetAlert2
+     */
     async deleteBudget(category) {
-        if (confirm(`¿Eliminar el límite de presupuesto para ${category}?`)) {
+        const result = await Swal.fire({
+            title: '¿Eliminar límite?',
+            text: `¿Deseas eliminar el presupuesto para la categoría "${category}"?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, borrar',
+            ...this._getAlertConfig()
+        });
+
+        if (result.isConfirmed) {
             await window.budgetDb.delete(category);
             this.notifications.show("Presupuesto eliminado", "info");
             this.loadBudgetsSettingsList();
@@ -261,7 +285,7 @@ class UI {
     _renderTransactionList(containerId, txs) {
         const list = document.getElementById(containerId);
         if (!list) return;
-
+        
         list.innerHTML = txs.map(t => `
             <div class="transaction-item ${t.type}" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color);">
                 <div style="display: flex; flex-direction: column;">
@@ -269,7 +293,7 @@ class UI {
                     <small style="opacity: 0.6; font-size: 10px;">${new Date(t.date).toLocaleDateString()}</small>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <strong>${this.formatCurrency(t.amount)}</strong>
+                    <strong style="color: ${t.type === 'ingreso' ? 'var(--income-color)' : 'var(--expense-color)'}">${this.formatCurrency(t.amount)}</strong>
                     <div class="transaction-actions" style="display: flex; gap: 5px;">
                         <button onclick="ui.prepareEdit(${t.id})" style="background:none; border:none; color:var(--primary-color); cursor:pointer;">
                             <i class="material-icons" style="font-size: 18px;">edit</i>
@@ -287,7 +311,6 @@ class UI {
         e.preventDefault();
         const form = e.target;
         const d = new FormData(form);
-        
         const txData = {
             name: d.get('name'),
             amount: parseFloat(d.get('amount')),
@@ -299,12 +322,11 @@ class UI {
         try {
             if (this.state.editingId) {
                 await this.db.updateTransaction(this.state.editingId, txData);
-                this.notifications.show('¡Actualizado con éxito!', 'success');
+                this.notifications.show('¡Actualizado!', 'success');
             } else {
                 await this.db.addTransaction(txData);
-                this.notifications.show('¡Guardado con éxito!', 'success');
+                this.notifications.show('¡Guardado!', 'success');
             }
-
             form.reset();
             this._cancelEdit();
             this.switchPage('dashboard');
@@ -317,10 +339,9 @@ class UI {
         const txs = await this.db.getAllTransactions();
         const tx = txs.find(t => t.id === id);
         if (!tx) return;
-
+        
         this.state.editingId = id;
         this.state.selectedDate = tx.date;
-        
         const form = document.getElementById('transaction-form');
         form.name.value = tx.name;
         form.amount.value = tx.amount;
@@ -328,13 +349,26 @@ class UI {
         
         await this.refreshCategorySelects();
         form.category.value = tx.category;
-
+        
         this.switchPage('transactions');
         this._resetFormUI("Editar Movimiento", "Actualizar Cambios");
     }
 
+    /**
+     * Eliminación de transacción con confirmación de SweetAlert2
+     */
     async confirmDelete(id) {
-        if (confirm("¿Estás seguro de que quieres eliminar este movimiento?")) {
+        const result = await Swal.fire({
+            title: '¿Borrar transacción?',
+            text: "Esta acción es definitiva y no se puede deshacer.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            ...this._getAlertConfig()
+        });
+
+        if (result.isConfirmed) {
             await this.db.deleteTransaction(id);
             this.notifications.show("Movimiento eliminado", "error");
             await this.loadDashboard();
@@ -351,7 +385,10 @@ class UI {
 
     _resetFormUI(title, btnText) {
         const section = document.getElementById('transactions');
-        if (section) section.querySelector('h1').textContent = title;
+        if (section) {
+            const h1 = section.querySelector('h1');
+            if (h1) h1.textContent = title;
+        }
         const btn = document.querySelector('#transaction-form button[type="submit"]');
         if (btn) btn.textContent = btnText;
     }
@@ -366,5 +403,5 @@ class UI {
     }
 }
 
-// Globalización
+// Inicialización global
 window.ui = new UI();

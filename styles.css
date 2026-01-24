@@ -1,45 +1,40 @@
 /* ==========================================================================
-   1. VARIABLES DE DISEÑO (Modo Oscuro Predeterminado)
+   1. VARIABLES DE DISEÑO
    ========================================================================== */
 :root {
     --background-color: #121212;
     --surface-color: #1e1e1e;
     --text-primary: #ffffff;
-    --text-secondary: #cccccc; /* Contraste mejorado */
+    --text-secondary: #cccccc;
     --border-color: #383838;
-    
+
     --primary-color: #bb86fc; 
-    --text-on-primary: #ffffff; /* Texto claro solicitado */
-    
+    --text-on-primary: #ffffff; 
+
     --income-color: #81c784;  
     --expense-color: #e57373; 
-    
+
     --radius: 12px;
     --shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 
-/* ==========================================================================
-   VARIABLES DE TEMA (Modo Claro Pastel con Alto Contraste)
-   ========================================================================== */
+/* Tema claro */
 [data-theme="light"] {
     --background-color: #f0f2f5; 
     --surface-color: #ffffff;    
-    
     --text-primary: #1a1a1b;      
-    --text-secondary: #4a4d51; /* Contraste mejorado */
-    
+    --text-secondary: #4a4d51; 
     --border-color: #d1d9e6;      
     --shadow: 0 8px 16px rgba(0, 0, 0, 0.1); 
-    
-    --primary-color: #6200ee; /* Violeta más intenso para legibilidad */
-    --text-on-primary: #ffffff; /* Texto claro sobre violeta */
-    
+
+    --primary-color: #6200ee; 
+    --text-on-primary: #ffffff; 
     --income-color: #1b5e20;      
     --expense-color: #b71c1c;     
 }
 
-/* Corregir visibilidad de inputs y opciones en modo claro */
-[data-theme="light"] input, 
+/* Fix inputs light mode */
+[data-theme="light"] input,
 [data-theme="light"] select {
     background-color: #ffffff !important;
     color: #1a1a1b !important;
@@ -51,21 +46,14 @@
     color: #1a1a1b !important;
 }
 
-[data-theme="light"] input:focus, 
-[data-theme="light"] select:focus {
-    color: #000000 !important;
-    background-color: #ffffff !important;
-    border-color: var(--primary-color) !important;
-}
-
 /* ==========================================================================
-   2. RESET & LAYOUT
+   2. RESET & BASE
    ========================================================================== */
-* { 
-    margin: 0; 
-    padding: 0; 
-    box-sizing: border-box; 
-    -webkit-tap-highlight-color: transparent; 
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -73,9 +61,14 @@ body {
     background-color: var(--background-color);
     color: var(--text-primary);
     line-height: 1.6;
-    padding-bottom: 80px; 
+    padding-bottom: 80px;
 }
 
+canvas { max-width: 100%; }
+
+/* ==========================================================================
+   3. LAYOUT
+   ========================================================================== */
 .main-content {
     width: 100%;
     max-width: 900px;
@@ -89,16 +82,16 @@ body {
 }
 
 .page.active {
-    display: block !important;
+    display: block;
 }
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ==========================================================================
-   3. COMPONENTES: DASHBOARD & CARDS
+   4. CARDS & DASHBOARD
    ========================================================================== */
 .balance-container {
     display: grid;
@@ -116,41 +109,127 @@ body {
     border: 1px solid var(--border-color);
 }
 
-.balance-card h2 { font-size: 28px; margin-top: 5px; font-weight: bold; }
-.balance-card.total h2 { color: var(--primary-color); }
-.balance-card.income h2 { color: var(--income-color); }
+.balance-card h2 {
+    font-size: 28px;
+    margin-top: 5px;
+    font-weight: bold;
+}
+
+.balance-card.total h2   { color: var(--primary-color); }
+.balance-card.income h2  { color: var(--income-color); }
 .balance-card.expense h2 { color: var(--expense-color); }
 
 .card {
     background: var(--surface-color);
     border-radius: var(--radius);
-    padding: 16px;
+    padding: 24px;
     box-shadow: var(--shadow);
     border: 1px solid var(--border-color);
     margin-bottom: 16px;
 }
 
+.card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
 /* ==========================================================================
-   4. LISTAS DE TRANSACCIONES & CRUD
+   5. LISTAS / CRUD
    ========================================================================== */
 .transaction-item {
     border-bottom: 1px solid var(--border-color);
     padding: 12px 0;
 }
-
 .transaction-item:last-child { border-bottom: none; }
 
-.transaction-actions button {
-    transition: transform 0.2s, opacity 0.2s;
+/* ==========================================================================
+   6. FORMULARIOS
+   ========================================================================== */
+.form-group {
+    margin-bottom: 20px;
 }
 
-.transaction-actions button:active {
-    transform: scale(0.8);
-    opacity: 0.7;
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+input,
+select {
+    width: 100%;
+    padding: 14px 16px;
+    background-color: #000000 !important;
+    border: 1px solid #2c2c2c !important;
+    border-radius: 8px;
+    color: var(--text-primary) !important;
+    font-size: 1rem;
+    appearance: none;
+    transition: border-color 0.2s ease;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: var(--primary-color) !important;
+}
+
+/* Flecha custom select */
+select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
 }
 
 /* ==========================================================================
-   5. CALENDARIO (GRID)
+   7. BOTONES
+   ========================================================================== */
+.btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+    border: none;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-today {
+    background: transparent;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.nav-btn-circle {
+    background: rgba(255,255,255,0.05);
+    border: none;
+    border-radius: 50%;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+}
+
+/* ==========================================================================
+   8. CALENDARIO
    ========================================================================== */
 .calendar-grid {
     display: grid;
@@ -172,18 +251,39 @@ body {
 }
 
 .day-cell.selected {
-    background: var(--primary-color) !important;
-    color: var(--text-on-primary) !important; /* Texto claro */
+    background: var(--primary-color);
+    color: var(--text-on-primary);
     font-weight: bold;
 }
 
-.indicators { display: flex; gap: 2px; position: absolute; bottom: 4px; }
-.dot { width: 5px; height: 5px; border-radius: 50%; }
-.dot.income { background: var(--income-color); }
+.day-cell.today {
+    border: 1px solid var(--primary-color);
+}
+
+.indicators {
+    display: flex;
+    gap: 2px;
+    position: absolute;
+    bottom: 4px;
+}
+
+.dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+}
+
+.dot.income  { background: var(--income-color); }
 .dot.expense { background: var(--expense-color); }
 
+#day-detail {
+    max-height: 50vh;
+    overflow-y: auto;
+    padding-top: 10px;
+}
+
 /* ==========================================================================
-   6. NAVEGACIÓN & BOTONES
+   9. NAVBAR
    ========================================================================== */
 .navbar {
     position: fixed;
@@ -202,31 +302,37 @@ body {
 }
 
 .nav-btn {
-    background: none; border: none; color: var(--text-secondary);
-    display: flex; flex-direction: column; align-items: center;
-    flex: 1; cursor: pointer; font-size: 11px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    cursor: pointer;
+    font-size: 11px;
 }
 
 .nav-btn.active { color: var(--primary-color); }
-.nav-btn i { font-size: 26px; margin-bottom: 2px; }
 
-.btn-primary {
-    width: 100%; padding: 14px; background: var(--primary-color);
-    color: var(--text-on-primary); /* Texto claro */
-    border: none; border-radius: 8px;
-    font-weight: bold; cursor: pointer;
+.nav-btn i {
+    font-size: 26px;
+    margin-bottom: 2px;
 }
 
-.notification {
-    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
-    padding: 10px 20px; border-radius: 20px; font-size: 14px;
-    display: none; z-index: 3000; color: #fff;
+/* ==========================================================================
+   10. THEME TOGGLE
+   ========================================================================== */
+.theme-toggle {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 1000;
+    background: none;
+    border: none;
+    cursor: pointer;
 }
-.notification.active { display: block; }
-.notification.success { background: var(--income-color); color: #fff; } /* Texto claro */
-.notification.error { background: var(--expense-color); color: #fff; } /* Texto claro */
 
-/* CORRECCIÓN: Visibilidad del botón de tema */
 #theme-toggle .material-icons {
     color: var(--text-primary);
     transition: color 0.3s ease;
@@ -236,19 +342,46 @@ body {
     color: var(--primary-color);
 }
 
-body.calendar-mode {
-    overflow: hidden; 
+/* ==========================================================================
+   11. SWEETALERT2
+   ========================================================================== */
+.swal2-popup {
+    background: var(--surface-color) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius) !important;
+    border: 1px solid var(--border-color) !important;
+    font-family: 'Roboto', sans-serif !important;
 }
 
-#day-detail {
-    max-height: 40vh;
-    overflow-y: auto;
+.swal2-title,
+.swal2-html-container {
+    color: var(--text-primary) !important;
+}
+
+.swal2-confirm {
+    background-color: var(--primary-color) !important;
+    color: var(--text-on-primary) !important;
+    border-radius: 8px !important;
+}
+
+.swal2-cancel {
+    background-color: transparent !important;
+    color: var(--expense-color) !important;
+    border: 1px solid var(--expense-color) !important;
+    border-radius: 8px !important;
 }
 
 /* ==========================================================================
-   7. MEDIA QUERIES (PANTALLAS GRANDES)
+   12. RESPONSIVE
    ========================================================================== */
 @media (min-width: 768px) {
-    .balance-container { grid-template-columns: repeat(3, 1fr); }
-    .dashboard-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; }
+    .balance-container {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 20px;
+    }
 }

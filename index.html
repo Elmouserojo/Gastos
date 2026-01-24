@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // Evitar parpadeo de tema
+        // Prevenir parpadeo de tema (Flash of Unstyled Content)
         const savedTheme = localStorage.getItem('app-theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
     </script>
@@ -22,7 +22,7 @@
 </head>
 <body>
 
-    <button id="theme-toggle" class="theme-toggle" style="position: fixed; top: 15px; right: 15px; z-index: 1000; background: none; border: none; cursor: pointer;">
+    <button id="theme-toggle" class="theme-toggle" title="Cambiar Tema">
         <span class="material-icons">light_mode</span>
     </button>
 
@@ -47,28 +47,26 @@
                     </div>
                 </div>
 
-                <div class="card" id="budget-progress-container" style="margin-bottom: 20px;">
-                </div>
+                <div id="budget-progress-container"></div>
 
                 <div class="dashboard-grid">
                     <div class="card">
                         <h3>Gastos por Categoría</h3>
-                        <div style="position: relative; height: 250px;">
+                        <div class="chart-wrapper">
                             <canvas id="categoryChart"></canvas>
                         </div>
                     </div>
 
                     <div class="card">
                         <h3>Evolución Mensual</h3>
-                        <div style="position: relative; height: 250px;">
+                        <div class="chart-wrapper">
                             <canvas id="evolutionChart"></canvas>
                         </div>
                     </div>
 
                     <div class="card">
                         <h3>Movimientos Recientes</h3>
-                        <div id="recent-list" class="transaction-list">
-                        </div>
+                        <div id="recent-list" class="transaction-list"></div>
                     </div>
                 </div>
             </section>
@@ -76,50 +74,47 @@
             <section id="transactions" class="page">
                 <div class="header"><h1>Añadir</h1></div>
                 
-                <div class="card" style="margin-bottom: 20px;">
-                    <h3>Añadir Movimiento</h3>
+                <div class="card">
+                    <h3 id="transaction-form-title">Añadir Movimiento</h3>
                     <form id="transaction-form">
-                        <div class="form-group" style="margin-bottom: 15px;">
-                            <label style="display:block; margin-bottom:5px;">Concepto</label>
-                            <input type="text" name="name" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;" required>
+                        <div class="form-group">
+                            <label>Concepto</label>
+                            <input type="text" name="name" placeholder="Ej: Supermercado" required>
                         </div>
-                        <div class="form-group" style="margin-bottom: 15px;">
-                            <label style="display:block; margin-bottom:5px;">Monto</label>
-                            <input type="number" name="amount" step="0.01" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;" required>
+                        <div class="form-group">
+                            <label>Monto</label>
+                            <input type="number" name="amount" step="0.01" placeholder="0.00" required>
                         </div>
-                        <div class="form-group" style="margin-bottom: 15px;">
-                            <label style="display:block; margin-bottom:5px;">Tipo</label>
-                            <select name="type" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;">
+                        <div class="form-group">
+                            <label>Tipo</label>
+                            <select name="type">
                                 <option value="egreso">Gasto</option>
                                 <option value="ingreso">Ingreso</option>
                             </select>
                         </div>
-                        <div class="form-group" style="margin-bottom: 20px;">
-                            <label style="display:block; margin-bottom:5px;">Categoría</label>
-                            <select name="category" id="transaction-category" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;">
-                                </select>
+                        <div class="form-group">
+                            <label>Categoría</label>
+                            <select name="category" id="transaction-category"></select>
                         </div>
-                        <button type="submit" class="btn-primary">Guardar Movimiento</button>
+                        <button type="submit" class="btn-primary" id="transaction-submit-btn">Guardar Movimiento</button>
                     </form>
                 </div>
 
-                <div class="card">
-                    <h3><i class="material-icons" style="vertical-align: middle; font-size: 20px;">ads_click</i> Definir Límite</h3>
+                <div class="card" style="margin-top: 20px;">
+                    <h3><i class="material-icons" style="vertical-align: middle;">ads_click</i> Definir Límite</h3>
                     <form id="budget-form">
-                        <div class="form-group" style="margin-bottom: 15px;">
-                            <label style="display:block; margin-bottom:5px;">Categoría</label>
-                            <select id="budget-category" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;" required>
-                                </select>
+                        <div class="form-group">
+                            <label>Categoría</label>
+                            <select id="budget-category" required></select>
                         </div>
-                        <div class="form-group" style="margin-bottom: 15px;">
-                            <label style="display:block; margin-bottom:5px;">Límite Mensual ($)</label>
-                            <input type="number" id="budget-limit" placeholder="Ej: 5000" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;" required>
+                        <div class="form-group">
+                            <label>Límite Mensual ($)</label>
+                            <input type="number" id="budget-limit" placeholder="Ej: 5000" required>
                         </div>
-                        <button type="submit" class="btn-primary" style="width: 100%; background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color);">
+                        <button type="submit" class="btn-primary" style="background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color);">
                             Guardar Presupuesto
                         </button>
                     </form>
-
                     <div id="active-budgets-list" style="margin-top: 20px;"></div>
                 </div>
             </section>
@@ -133,30 +128,37 @@
             <section id="settings" class="page">
                 <div class="header"><h1>Ajustes</h1></div>
                 
-                <div class="card" style="margin-bottom: 20px;">
-                    <h3><i class="material-icons" style="vertical-align: middle; font-size: 20px;">label</i> Mis Categorías</h3>
-                    <p style="font-size: 12px; opacity: 0.7; margin-bottom: 15px;">Añade o quita categorías para tus movimientos.</p>
+                <div class="card">
+                    <h3><i class="material-icons" style="vertical-align: middle;">label</i> Mis Categorías</h3>
+                    <p class="subtitle">Personaliza tus etiquetas de gasto.</p>
                     
                     <form id="category-form" style="display: flex; gap: 10px; margin-bottom: 20px;">
-                        <input type="text" id="new-category-name" placeholder="Ej: Mascotas" style="flex: 1; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--background-color); color:white;" required>
+                        <input type="text" id="new-category-name" placeholder="Ej: Mascotas" style="flex: 1;" required>
                         <button type="submit" class="btn-primary" style="width: auto; padding: 0 15px;">
                             <i class="material-icons">add</i>
                         </button>
                     </form>
-
-                    <div id="manage-categories-list">
-                        </div>
+                    <div id="manage-categories-list"></div>
                 </div>
 
-                <div class="card">
-                    <h3>Copia de Seguridad</h3>
-                    <p style="font-size: 13px; opacity: 0.7; margin: 10px 0 20px;">Gestiona tus datos exportando o importando archivos JSON.</p>
-                    <button class="btn-primary" onclick="backupSystem.exportToJSON()" style="margin-bottom: 10px;">
-                        <i class="material-icons" style="vertical-align: middle; font-size: 18px;">download</i> Exportar Datos
-                    </button>
-                    <input type="file" id="importFile" accept=".json,application/json" onchange="backupSystem.importFromJSON(this.files[0])" style="display:none">
-                    <button class="btn-primary" style="background:transparent; border:1px solid var(--primary-color); color:var(--primary-color);" onclick="document.getElementById('importFile').click()">
-                        <i class="material-icons" style="vertical-align: middle; font-size: 18px;">upload</i> Importar Datos
+                <div class="card" style="margin-top: 20px;">
+                    <h3>Gestión de Datos</h3>
+                    <p class="subtitle">Resguarda tu información o restaura una copia.</p>
+                    
+                    <div class="backup-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <button class="btn-primary" onclick="backupSystem.exportToJSON()">
+                            <i class="material-icons">download</i> Exportar
+                        </button>
+                        
+                        <input type="file" id="importFile" accept=".json" onchange="backupSystem.importFromJSON(this.files[0])" style="display:none">
+                        <button class="btn-primary" style="background:transparent; border:1px solid var(--primary-color); color:var(--primary-color);" onclick="document.getElementById('importFile').click()">
+                            <i class="material-icons">add</i> Importar
+                        </button>
+                    </div>
+
+                    <input type="file" id="restoreFile" accept=".json" onchange="backupSystem.restoreFromJSON(this.files[0])" style="display:none">
+                    <button class="btn-primary" style="background:var(--expense-color); color:#fff; border:none;" onclick="document.getElementById('restoreFile').click()">
+                        <i class="material-icons">history</i> Restaurar Backup Completo
                     </button>
                 </div>
             </section>
@@ -186,6 +188,8 @@
 
     <div id="notification" class="notification"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <script src="database.js"></script>
     <script src="transaction-store.js"></script>
     <script src="budget-store.js"></script>
