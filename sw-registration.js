@@ -14,7 +14,7 @@ class ServiceWorkerManager {
     }
 
     try {
-      this.registration = await navigator.serviceWorker.register('/sw.js', {
+      this.registration = await navigator.serviceWorker.register('/Gastos/sw.js', {
         scope: '/',
         updateViaCache: 'none' // Siempre verificar updates
       });

@@ -18,7 +18,7 @@ const ASSETS = [
     '/calendar.js',
     '/backup-system.js',
     '/app.js',
-    '/manifest.json'
+    '/manifest.json',
     '/sw-registration.js',
 ];
 
