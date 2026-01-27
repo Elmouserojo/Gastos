@@ -1,22 +1,25 @@
 const CACHE_NAME = 'cuentas-claras-v2';
 const ASSETS = [
-    './',
-    './index.html',
-    './estilos/variables.css',
-    './estilos/base.css',
-    './estilos/layout.css',
-    './estilos/components.css',
-    './estilos/forms.css',
-    './estilos/calendar.css',
-    './estilos/navbar.css',
-    './estilos/theme.css',
-    './database.js',
-    './ui.js',
-    './calendar.js',
-    './backup-system.js',
-    './app.js',
-    './offline.html',
-    './manifest.json'
+    '/',
+    '/index.html',
+    '/offline.html',
+
+    '/estilos/variables.css',
+    '/estilos/base.css',
+    '/estilos/layout.css',
+    '/estilos/components.css',
+    '/estilos/forms.css',
+    '/estilos/calendar.css',
+    '/estilos/navbar.css',
+    '/estilos/theme.css',
+
+    '/database.js',
+    '/ui.js',
+    '/calendar.js',
+    '/backup-system.js',
+    '/app.js',
+    '/manifest.json'
+    '/sw-registration.js',
 ];
 
 // 1. INSTALACIÓN: Guardar todos los archivos en el celular
@@ -48,7 +51,7 @@ self.addEventListener('fetch', event => {
             return response || fetch(event.request).catch(() => {
                 // Si falla internet y es una página, mostrar offline.html
                 if (event.request.mode === 'navigate') {
-                    return caches.match('./offline.html');
+                    return caches.match('/offline.html');
                 }
             });
         })
