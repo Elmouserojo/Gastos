@@ -1,0 +1,115 @@
+/* Cards */
+.balance-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.balance-card {
+    background: var(--surface-color);
+    padding: 20px;
+    border-radius: var(--radius);
+    text-align: center;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+}
+
+.balance-card h2 { font-size: 28px; margin-top: 5px; font-weight: bold; }
+.balance-card.total h2   { color: var(--primary-color); }
+.balance-card.income h2  { color: var(--income-color); }
+.balance-card.expense h2 { color: var(--expense-color); }
+
+.card {
+    background: var(--surface-color);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    margin-bottom: 16px;
+}
+
+.card h3 { font-size: 1.5rem; margin-bottom: 20px; font-weight: bold; }
+
+/* List Items */
+.transaction-item {
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 0;
+}
+.transaction-item:last-child { border-bottom: none; }
+
+/* General Buttons */
+.btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+    border: none;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.nav-btn-circle {
+    background: rgba(255,255,255,0.05);
+    border: none;
+    border-radius: 50%;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+}
+
+/* SweetAlert2 Integration */
+.swal2-popup {
+    background: var(--surface-color) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius) !important;
+    border: 1px solid var(--border-color) !important;
+    font-family: 'Roboto', sans-serif !important;
+}
+.swal2-title, .swal2-html-container { color: var(--text-primary) !important; }
+.swal2-confirm {
+    background-color: var(--primary-color) !important;
+    color: var(--text-on-primary) !important;
+    border-radius: 8px !important;
+}
+.swal2-cancel {
+    background-color: transparent !important;
+    color: var(--expense-color) !important;
+    border: 1px solid var(--expense-color) !important;
+    border-radius: 8px !important;
+}
+
+/* ==========================================================================
+   NOTIFICACIONES (CON FADE IN/OUT)
+   ========================================================================== */
+.notification {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px); /* Empieza un poco más abajo */
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    z-index: 3000;
+    color: #fff;
+    
+    /* EL CAMBIO: En lugar de display: none usamos opacidad */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s;
+}
+
+.notification.active {
+    display: block; /* Mantenemos esto por compatibilidad */
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0); /* Sube suavemente */
+}

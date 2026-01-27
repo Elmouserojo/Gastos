@@ -1,0 +1,61 @@
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.day-cell {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    cursor: pointer;
+    position: relative;
+    font-size: 14px;
+}
+
+.day-cell.selected {
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+    font-weight: bold;
+}
+
+.day-cell.today {
+    border: 1px solid var(--primary-color);
+}
+
+.indicators {
+    display: flex;
+    gap: 2px;
+    position: absolute;
+    bottom: 4px;
+}
+
+.dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+}
+
+.dot.income  { background: var(--income-color); }
+.dot.expense { background: var(--expense-color); }
+
+.btn-today {
+    background: transparent;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#day-detail {
+    max-height: 50vh;
+    overflow-y: auto;
+    padding-top: 10px;
+}

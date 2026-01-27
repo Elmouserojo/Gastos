@@ -1,0 +1,31 @@
+.theme-toggle {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 1000;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+#theme-toggle .material-icons {
+    color: var(--text-primary);
+    transition: color 0.3s ease;
+}
+
+#theme-toggle:hover .material-icons {
+    color: var(--primary-color);
+}
+
+/* Fix inputs light mode override */
+[data-theme="light"] input,
+[data-theme="light"] select {
+    background-color: #ffffff !important;
+    color: #1a1a1b !important;
+    border: 1px solid #d1d9e6 !important;
+}
+
+[data-theme="light"] select option {
+    background-color: #ffffff !important;
+    color: #1a1a1b !important;
+}
