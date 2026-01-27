@@ -9,7 +9,9 @@
 
     📈 Gráficos Dinámicos: Distribución de gastos por categoría mediante gráficos de dona (Chart.js).
 
-    📂 Categorías Personalizadas: * 🍔 Comida
+    📂 Categorías Personalizadas:
+
+        🍔 Comida
 
         🏠 Local
 
@@ -42,17 +44,25 @@ Este proyecto fue construido priorizando la velocidad y la privacidad:
 📂 Estructura del Proyecto
 Plaintext
 
-├── index.html          # Estructura principal de la app
-├── styles.css           # Estilos, temas (claro/oscuro) y responsive
-├── database.js          # Motor de IndexedDB (CRUD)
-├── ui.js                # Lógica de la interfaz y gráficos
-├── calendar.js          # Lógica del calendario interactivo
-├── backup-system.js     # Sistema de exportación/importación JSON
-├── app.js               # Director de orquesta (Inicialización)
-├── sw.js                # Service Worker (Modo Offline)
-├── sw-registration.js   # Registro del Service Worker
-├── manifest.json        # Configuración de PWA
-└── icons/               # Iconos de la aplicación
+├── index.html              # Estructura principal de la app
+├── estilos/                # Carpeta de estilos modularizados
+│   ├── variables.css       # Colores y constantes
+│   ├── base.css            # Reset y base
+│   ├── layout.css          # Estructura y animaciones
+│   ├── components.css      # Tarjetas y botones
+│   ├── forms.css           # Formularios e inputs
+│   ├── calendar.css        # Cuadrícula del calendario
+│   ├── navbar.css          # Barra de navegación
+│   └── theme.css           # Lógica de temas
+├── database.js             # Motor de IndexedDB (CRUD)
+├── ui.js                   # Lógica de la interfaz y gráficos
+├── calendar.js             # Lógica del calendario interactivo
+├── backup-system.js        # Sistema de exportación/importación JSON
+├── app.js                  # Director de orquesta (Inicialización)
+├── sw.js                   # Service Worker (Modo Offline)
+├── sw-registration.js      # Registro del Service Worker
+├── manifest.json           # Configuración de PWA
+└── icons/                  # Iconos de la aplicación
 
 🚀 Instalación y Uso
 
@@ -73,7 +83,7 @@ Cuentas Claras prioriza tu privacidad:
 
     Todo se almacena en el almacenamiento local de tu navegador (IndexedDB).
 
-    Al actualizar la aplicación en Vercel, tus datos permanecen intactos gracias a la política de persistencia local del navegador.
+    Al actualizar la aplicación, tus datos permanecen intactos gracias a la política de persistencia local del navegador.
 
 🤝 Contribuciones
 
@@ -89,4 +99,4 @@ Si tenés ideas para mejorar el diseño o añadir funciones, ¡los Pull Requests
 
     Abre un Pull Request.
 
-Hecho con ❤️ por [Elmouserojo]
+Hecho por David Palacios [Elmouserojo]
