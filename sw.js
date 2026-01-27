@@ -1,7 +1,7 @@
 const CACHE_NAME = 'cuentas-claras-v2';
 const ASSETS = [
-    '/',
-    '/index.html',
+    './',
+    './index.html',
     './estilos/variables.css',
     './estilos/base.css',
     './estilos/layout.css',
@@ -10,13 +10,13 @@ const ASSETS = [
     './estilos/calendar.css',
     './estilos/navbar.css',
     './estilos/theme.css',
-    '/database.js',
-    '/ui.js',
-    '/calendar.js',
-    '/backup-system.js',
-    '/app.js',
-    '/offline.html',
-    '/manifest.json'
+    './database.js',
+    './ui.js',
+    './calendar.js',
+    './backup-system.js',
+    './app.js',
+    './offline.html',
+    './manifest.json'
 ];
 
 // 1. INSTALACIÓN: Guardar todos los archivos en el celular
