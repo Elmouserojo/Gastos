@@ -48,7 +48,7 @@ self.addEventListener('fetch', event => {
             return response || fetch(event.request).catch(() => {
                 // Si falla internet y es una página, mostrar offline.html
                 if (event.request.mode === 'navigate') {
-                    return caches.match('/offline.html');
+                    return caches.match('./offline.html');
                 }
             });
         })
