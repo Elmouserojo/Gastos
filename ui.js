@@ -17,7 +17,6 @@ class UI {
 
     /**
      * Inicialización de la interfaz
-     * Inyecta dependencias y prepara la carga inicial de datos.
      */
     async init() {
         this.db = window.db;
@@ -30,9 +29,32 @@ class UI {
         this._setupForm();
         this._setupBudgetForm();
         this._setupCategoryForm();
+        this._setupMonthSelector(); 
         
         await this.refreshCategorySelects(); 
         await this.loadDashboard();
+    }
+
+    /**
+     * Configuración del selector de mes con persistencia en localStorage
+     */
+    _setupMonthSelector() {
+        const selector = document.getElementById('month-selector');
+        if (!selector) return;
+
+        const savedMonth = localStorage.getItem('app-selected-month');
+        if (savedMonth) {
+            selector.value = savedMonth;
+        } else {
+            const now = new Date();
+            const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            selector.value = currentMonth;
+        }
+
+        selector.onchange = () => {
+            localStorage.setItem('app-selected-month', selector.value);
+            this.loadDashboard();
+        };
     }
 
     /**
@@ -43,17 +65,14 @@ class UI {
         return {
             background: isDark ? '#1e1e1e' : '#ffffff',
             color: isDark ? '#ffffff' : '#1a1a1b',
-            confirmButtonColor: isDark ? '#bb86fc' : '#6200ee', // Violeta según tema
-            cancelButtonColor: '#e57373', // Rojo para cancelar/peligro
+            confirmButtonColor: isDark ? '#bb86fc' : '#6200ee',
+            cancelButtonColor: '#e57373',
             reverseButtons: true,
             backdrop: `rgba(0,0,0,0.5)`,
-            heightAuto: false // Evita saltos de scroll en móviles
+            heightAuto: false
         };
     }
 
-    /**
-     * Manejo del tema Claro/Oscuro con persistencia e iconos dinámicos
-     */
     _setupTheme() {
         const toggle = document.getElementById('theme-toggle');
         if (!toggle) return;
@@ -63,9 +82,7 @@ class UI {
         const apply = (t) => {
             document.documentElement.setAttribute('data-theme', t);
             localStorage.setItem('app-theme', t);
-            
             if (iconEl) {
-                // Luna para ir a oscuro, Sol para ir a claro
                 iconEl.textContent = t === 'light' ? 'dark_mode' : 'light_mode';
             }
         };
@@ -76,8 +93,6 @@ class UI {
             const current = document.documentElement.getAttribute('data-theme');
             const next = current === 'light' ? 'dark' : 'light';
             apply(next);
-            
-            // Forzar refresco de gráficos para actualizar colores de fuente
             this.loadDashboard();
         };
     }
@@ -86,7 +101,6 @@ class UI {
         this.navLinks.forEach(link => {
             link.onclick = (e) => {
                 e.preventDefault();
-                // Si salimos de una página mientras editamos, cancelamos la edición
                 if (this.state.editingId) this._cancelEdit();
                 this.switchPage(link.getAttribute('data-page'));
             };
@@ -98,15 +112,10 @@ class UI {
         if (form) form.onsubmit = (e) => this._handleFormSubmit(e);
     }
 
-    /**
-     * Prepara el formulario para registrar un movimiento en una fecha específica
-     */
     prepareTransactionWithDate(date) {
         this.state.selectedDate = date.toISOString();
         this.switchPage('transactions');
-        
         const formattedDate = date.toLocaleDateString();
-        // Feedback visual en el encabezado
         this._resetFormUI(`Registrar para el ${formattedDate}`, "Guardar Movimiento");
         this.notifications.show(`Fecha: ${formattedDate}`, "info");
     }
@@ -180,22 +189,49 @@ class UI {
         if (pageId === 'settings') this.loadCategoriesSettingsList();
     }
 
+    /**
+     * Carga el Dashboard aplicando filtros mensuales
+     */
     async loadDashboard() {
-        const txs = await this.db.getAllTransactions();
-        const inc = txs.filter(t => t.type === 'ingreso').reduce((a, b) => a + b.amount, 0);
-        const exp = txs.filter(t => t.type === 'egreso').reduce((a, b) => a + b.amount, 0);
+        const selector = document.getElementById('month-selector');
+        if (!selector) return;
+
+        // 1. Obtener año y mes del selector (formato YYYY-MM)
+        const [year, month] = selector.value.split('-').map(Number);
+        
+        // 2. Obtener todas las transacciones
+        const allTxs = await this.db.getAllTransactions();
+        
+        // 3. Filtrar solo las del mes seleccionado
+        const monthlyTxs = allTxs.filter(t => {
+            const d = new Date(t.date);
+            return d.getFullYear() === year && (d.getMonth() + 1) === month;
+        });
+
+        // 4. Calcular totales del mes
+        const inc = monthlyTxs.filter(t => t.type === 'ingreso').reduce((a, b) => a + b.amount, 0);
+        const exp = monthlyTxs.filter(t => t.type === 'egreso').reduce((a, b) => a + b.amount, 0);
         
         this._setText('total-balance', this.formatCurrency(inc - exp));
         this._setText('total-income', this.formatCurrency(inc));
         this._setText('total-expense', this.formatCurrency(exp));
         
-        this.charts.updateCategoryChart(txs);
-        this.charts.updateEvolutionChart(txs);
+        // 5. Actualizar Gráficos
+        this.charts.updateCategoryChart(monthlyTxs);
+        this.charts.updateEvolutionChart(allTxs); 
         
+        // 6. Actualizar Presupuestos
         if (window.budgetManager) {
-            await window.budgetManager.renderProgress('budget-progress-container');
+            await window.budgetManager.renderProgress('budget-progress-container', year, month);
         }
-        this._renderTransactionList('recent-list', txs.slice(0, 5));
+
+        // 7. NUEVO: Generar Reporte Mensual Detallado
+        if (window.monthlyReport) {
+            await window.monthlyReport.generate(year, month);
+        }
+
+        // 8. Lista de movimientos recientes del mes
+        this._renderTransactionList('recent-list', monthlyTxs.slice(0, 10));
     }
 
     async loadCategoriesSettingsList() {
@@ -213,9 +249,6 @@ class UI {
         `).join('');
     }
 
-    /**
-     * Eliminación de categoría con confirmación de SweetAlert2
-     */
     async deleteCategory(name) {
         const result = await Swal.fire({
             title: '¿Eliminar categoría?',
@@ -261,9 +294,6 @@ class UI {
         container.innerHTML = html;
     }
 
-    /**
-     * Eliminación de presupuesto con confirmación de SweetAlert2
-     */
     async deleteBudget(category) {
         const result = await Swal.fire({
             title: '¿Eliminar límite?',
@@ -304,7 +334,7 @@ class UI {
                     </div>
                 </div>
             </div>
-        `).join('') || '<p style="text-align:center; opacity:0.5; padding: 20px;">Sin movimientos</p>';
+        `).join('') || '<p style="text-align:center; opacity:0.5; padding: 20px;">Sin movimientos este mes</p>';
     }
 
     async _handleFormSubmit(e) {
@@ -354,9 +384,6 @@ class UI {
         this._resetFormUI("Editar Movimiento", "Actualizar Cambios");
     }
 
-    /**
-     * Eliminación de transacción con confirmación de SweetAlert2
-     */
     async confirmDelete(id) {
         const result = await Swal.fire({
             title: '¿Borrar transacción?',

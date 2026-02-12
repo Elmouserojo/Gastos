@@ -1,3 +1,7 @@
+/* ==========================================================================
+   FORMULARIOS Y ENTRADAS DE DATOS
+   ========================================================================== */
+
 .form-group {
     margin-bottom: 20px;
 }
@@ -35,12 +39,23 @@ select {
     padding-right: 40px;
 }
 
+/* NUEVO: Selector de mes compacto para la cabecera */
 .input-mini {
-    width: auto !important;
-    padding: 6px 10px !important;
-    font-size: 12px !important;
-    background: var(--surface-color) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 8px;
-    color: var(--text-primary);
+    width: auto !important; /* No ocupa todo el ancho */
+    padding: 8px 12px !important;
+    font-size: 0.9rem !important;
+    font-family: inherit;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* Ajuste para el icono del calendario en navegadores Webkit (Chrome/Edge/Safari) */
+input[type="month"]::-webkit-calendar-picker-indicator {
+    filter: invert(1); /* Convierte el icono negro en blanco para el tema oscuro */
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+input[type="month"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
 }

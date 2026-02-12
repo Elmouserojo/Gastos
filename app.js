@@ -37,16 +37,15 @@ class App {
 
     /**
      * Solicita al navegador que no borre los datos de IndexedDB automáticamente.
+     * Vital para evitar la pérdida de datos en limpiezas automáticas del sistema.
      */
     async _requestStoragePersistence() {
         if (navigator.storage && navigator.storage.persist) {
             try {
                 const isPersisted = await navigator.storage.persisted();
-                console.log(`¿Persistencia actual?: ${isPersisted ? "Si" : "No"}`);
-                
                 if (!isPersisted) {
                     const granted = await navigator.storage.persist();
-                    console.log(`¿Persistencia concedida?: ${granted ? "Si" : "No"}`);
+                    console.log(`¿Persistencia de datos concedida?: ${granted ? "Sí" : "No"}`);
                 }
             } catch (err) {
                 console.warn("Error al solicitar persistencia de datos:", err);
@@ -55,7 +54,7 @@ class App {
     }
 
     /**
-     * Inicialización asíncrona
+     * Inicialización asíncrona de la aplicación
      */
     async init() {
         if (this.state.isInitialized) return;
@@ -63,27 +62,28 @@ class App {
         try {
             console.log('🚀 Iniciando Cuentas Claras...');
 
-            // A. NUEVO: Solicitar persistencia de almacenamiento antes de abrir la DB
+            // A. Garantizar persistencia de almacenamiento
             await this._requestStoragePersistence();
 
             // B. Inicializar Base de Datos (Motor IndexedDB v3)
             await this.db.init();
 
             // C. Sembrar categorías iniciales si es la primera vez
-            await this.categoryDb.seed();
+            if (this.categoryDb && typeof this.categoryDb.seed === 'function') {
+                await this.categoryDb.seed();
+            }
 
-            // D. Inicializar Sistema de Backup
-            if (this.backup.init) await this.backup.init();
-
-            // E. Configurar UI y Eventos
+            // D. Configurar UI y Eventos Globales
             this._setupEventListeners();
+            
+            // ui.init() ahora configura el month-selector y carga el primer dashboard mensual
             await this.ui.init(); 
 
-            // F. Verificar primer uso
+            // E. Verificar si es el primer uso para dar la bienvenida
             await this._checkFirstTime();
 
             this.state.isInitialized = true;
-            console.log('✅ Aplicación lista y sincronizada');
+            console.log('✅ Aplicación lista y sincronizada con el modelo mensual');
 
         } catch (error) {
             this._handleFatalError(error);
@@ -91,13 +91,15 @@ class App {
     }
 
     /**
-     * Refresca toda la visualización de la app
+     * Refresca la visualización de la app respetando el filtro mensual seleccionado
      */
     async refresh() {
         if (!this.state.isInitialized) return;
         
         try {
+            // ui.loadDashboard() lee automáticamente el valor del month-selector
             await this.ui.loadDashboard();
+            
             if (this.calendar && typeof this.calendar.init === 'function') {
                 this.calendar.init();
             }
@@ -109,9 +111,14 @@ class App {
     _setupEventListeners() {
         const { signal } = this.state.abortController;
 
+        // Detectar cambios de conexión
         window.addEventListener('online', this.handleOnlineStatus, { signal });
         window.addEventListener('offline', this.handleOnlineStatus, { signal });
 
+        // Escuchar cambios de datos para disparar refrescos globales
+        window.addEventListener('transaction-updated', () => this.refresh(), { signal });
+
+        // Auto-backup al cerrar (si está implementado)
         window.addEventListener('beforeunload', () => {
             if (this.backup && typeof this.backup.runAutoBackup === 'function') {
                 this.backup.runAutoBackup();
@@ -121,9 +128,9 @@ class App {
 
     handleOnlineStatus() {
         this.state.isOnline = navigator.onLine;
-        const message = this.state.isOnline ? 'Conexión restaurada' : 'Sin conexión a internet';
+        const message = this.state.isOnline ? 'Conexión restaurada' : 'Sin conexión a internet (Modo Offline)';
         
-        const notifier = this.ui.notifications || this.ui.notificationManager;
+        const notifier = this.ui.notifications;
         if (notifier) {
             notifier.show(message, this.state.isOnline ? 'success' : 'info');
         }
@@ -134,16 +141,15 @@ class App {
         
         if (transactions.length === 0) {
             setTimeout(() => {
-                const notifier = this.ui.notifications || this.ui.notificationManager;
-                if (notifier) {
-                    notifier.show('¡Bienvenido! Comienza agregando un movimiento.', 'info');
+                if (this.ui.notifications) {
+                    this.ui.notifications.show('¡Bienvenido! Comienza eligiendo un mes y agregando un movimiento.', 'info');
                 }
             }, 1000);
         }
     }
 
     _handleFatalError(error) {
-        console.error('❌ Error fatal:', error);
+        console.error('❌ Error fatal de sistema:', error);
         this.state.error = error;
 
         const container = document.createElement('div');
@@ -151,9 +157,12 @@ class App {
         container.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:#121212;color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:20px;text-align:center;font-family:sans-serif;";
 
         container.innerHTML = `
-            <h2 style="color:#ff5252">Error de Inicialización</h2>
-            <p style="margin:15px 0;opacity:0.8">Hubo un problema al cargar la aplicación: ${error.message}</p>
-            <button onclick="location.reload()" style="background:#bb86fc;border:none;padding:12px 24px;border-radius:8px;color:#000;font-weight:bold;cursor:pointer">Reintentar</button>
+            <div style="max-width:400px">
+                <h2 style="color:#ff5252; margin-bottom:10px">Error de Inicialización</h2>
+                <p style="margin:15px 0;opacity:0.8;line-height:1.5">No pudimos conectar con la base de datos local. Por favor, intenta recargar la página.</p>
+                <code style="display:block;background:#222;padding:10px;border-radius:4px;font-size:12px;margin-bottom:20px;color:#ff8a80">${error.message}</code>
+                <button onclick="location.reload()" style="background:#bb86fc;border:none;padding:12px 24px;border-radius:8px;color:#000;font-weight:bold;cursor:pointer;width:100%">Reintentar</button>
+            </div>
         `;
         
         document.body.innerHTML = ''; 
@@ -169,22 +178,25 @@ class App {
 
 // ========== INICIALIZACIÓN GLOBAL (BOOTSTRAP) ==========
 
+
+
 document.addEventListener('DOMContentLoaded', () => {
     try {
+        // Inicializar Motor de Datos
         const dbEngine = new Database();
 
+        // Inyectar motor en los Stores específicos
         window.db = new TransactionStore(dbEngine);
         window.budgetDb = new BudgetStore(dbEngine);
         window.categoryDb = new CategoryStore(dbEngine);
 
+        // Inicializar Gestores de UI y Lógica
         window.charts = new ChartManager();
         window.budgetManager = new BudgetManager();
         window.calendar = new Calendar();
         window.backupSystem = new BackupSystem({ db: window.db, ui: window.ui });
 
-        // window.monthlyReport = new MonthlyReport(window.db);
-        // window.monthlyReport.generate();
-
+        // Crear instancia de la App con inyección de dependencias
         const app = new App({
             db: window.db,
             categoryDb: window.categoryDb,
@@ -193,7 +205,10 @@ document.addEventListener('DOMContentLoaded', () => {
             backup: window.backupSystem 
         });
 
+        // Hacer la instancia accesible globalmente para depuración o refrescos manuales
         window.app = app;
+        
+        // Arrancar aplicación
         app.init();
 
     } catch (error) {
