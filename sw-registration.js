@@ -14,248 +14,108 @@ class ServiceWorkerManager {
     }
 
     try {
+      // Mantenemos tus rutas y scope intactos
       this.registration = await navigator.serviceWorker.register('/Gastos/sw.js', {
         scope: './Gastos/',
-        updateViaCache: 'none' // Siempre verificar updates
+        updateViaCache: 'none'
       });
 
-      console.log('Service Worker registrado:', this.registration);
+      console.log('✅ Service Worker registrado:', this.registration);
 
       this.setupEventListeners();
       this.checkForUpdates();
       this.setupPeriodicUpdates();
     } catch (error) {
-      console.error('Error registrando Service Worker:', error);
+      console.error('❌ Error registrando Service Worker:', error);
     }
   }
 
   setupEventListeners() {
-    // Escuchar mensajes del Service Worker
-    navigator.serviceWorker.addEventListener('message', event => {
-      this.handleSWMessage(event.data);
+    // Detectar si hay un SW esperando apenas cargamos
+    if (this.registration && this.registration.waiting) {
+        this.updateAvailable = true;
+        this.showUpdateNotification();
+    }
+
+    // Escuchar si aparece un nuevo SW mientras la app está abierta
+    this.registration.addEventListener('updatefound', () => {
+        const newWorker = this.registration.installing;
+        newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                this.updateAvailable = true;
+                this.showUpdateNotification();
+            }
+        });
     });
 
-    // Controlador para cuando se actualiza el Service Worker
+    // Recargar automáticamente cuando el nuevo SW tome el control
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      console.log('Nuevo Service Worker tomó control');
+      console.log('🔄 Aplicando nueva versión...');
       window.location.reload();
     });
   }
 
-  handleSWMessage(message) {
-    console.log('Mensaje de Service Worker:', message);
-
-    switch (message.type) {
-      case 'SW_INSTALLED':
-        console.log(`Service Worker instalado (v${message.version})`);
-        this.showToast('Aplicación lista para usar offline');
-        break;
-
-      case 'SW_ACTIVATED':
-        console.log(`Service Worker activado (v${message.version})`);
-        break;
-
-      case 'ASSET_UPDATED':
-        console.log('Recurso actualizado:', message.url);
-        if (message.url.includes('.js')) {
-          this.notifyAppUpdate();
-        }
-        break;
-
-      case 'SYNC_COMPLETE':
-        this.showToast(`${message.successful} transacciones sincronizadas`);
-        break;
-
-      case 'APP_UPDATED':
-        this.updateAvailable = true;
-        this.showUpdateNotification();
-        break;
-    }
-  }
-
   async checkForUpdates() {
     if (!this.registration) return;
-
     try {
-      // Forzar verificación de actualizaciones
-      const newRegistration = await this.registration.update();
-      
-      if (newRegistration.installing) {
-        console.log('Nueva versión del Service Worker encontrada');
-        this.updateAvailable = true;
-        this.showUpdateNotification();
-      }
+      await this.registration.update();
     } catch (error) {
       console.debug('Error verificando updates:', error);
     }
   }
 
   setupPeriodicUpdates() {
-    // Verificar updates cada 1 hora
-    setInterval(() => this.checkForUpdates(), 60 * 60 * 1000);
-    
-    // Verificar cuando la app vuelve a primer plano
+    setInterval(() => this.checkForUpdates(), 1000 * 60 * 60); // Cada hora
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
-        this.checkForUpdates();
-      }
+      if (!document.hidden) this.checkForUpdates();
     });
   }
 
   showUpdateNotification() {
-    if (!this.updateAvailable) return;
+    // Evitar duplicados si ya hay una notificación
+    if (document.querySelector('.update-notification')) return;
 
     const notification = document.createElement('div');
     notification.className = 'update-notification';
     notification.innerHTML = `
-      <div class="update-content">
-        <i class="material-icons">system_update</i>
-        <span>Nueva versión disponible</span>
-        <div class="update-actions">
-          <button class="btn-secondary" id="update-later">Después</button>
-          <button class="btn-primary" id="update-now">Actualizar</button>
+      <div class="update-content" style="display:flex; align-items:center; gap:10px;">
+        <i class="material-icons" style="color:var(--primary-color)">system_update</i>
+        <span style="font-size:13px; color:var(--text-primary)">Nueva versión v3 lista</span>
+        <div class="update-actions" style="display:flex; gap:10px; margin-left:auto;">
+          <button id="update-now" class="btn-primary" style="padding:6px 12px; font-size:12px; width:auto;">Actualizar</button>
         </div>
       </div>
     `;
 
+    // Usamos el estilo que ya tenías pero optimizado
     notification.style.cssText = `
       position: fixed;
-      bottom: 20px;
+      bottom: 80px; /* Por encima de la navbar */
+      left: 20px;
       right: 20px;
       background: var(--surface-color);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
+      border: 1px solid var(--primary-color);
+      border-radius: 12px;
       padding: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      z-index: 1000;
-      max-width: 320px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      z-index: 2000;
     `;
 
     document.body.appendChild(notification);
 
-    // Event listeners para los botones
     notification.querySelector('#update-now').addEventListener('click', () => {
       this.applyUpdate();
-      notification.remove();
     });
-
-    notification.querySelector('#update-later').addEventListener('click', () => {
-      notification.remove();
-    });
-
-    // Auto-ocultar después de 30 segundos
-    setTimeout(() => {
-      if (document.body.contains(notification)) {
-        notification.remove();
-      }
-    }, 30000);
   }
 
   async applyUpdate() {
-    if (!this.registration || !this.registration.waiting) {
-      return;
-    }
+    if (!this.registration || !this.registration.waiting) return;
 
-    // Pedir al Service Worker que salte la espera
-    this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-
-    // Recargar la página después de un breve delay
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
-  }
-
-  showToast(message, type = 'info') {
-    // Implementar sistema de notificaciones toast
-    console.log(`[Toast ${type}]: ${message}`);
-    
-    // Si tienes un sistema de notificaciones en la UI, usarlo aquí
-    if (window.ui && window.ui.showNotification) {
-      window.ui.showNotification(message, type);
-    }
-  }
-
-  notifyAppUpdate() {
-    // Notificar a la aplicación sobre actualización de assets
-    if (window.ui && window.ui.showNotification) {
-      window.ui.showNotification('Aplicación actualizada, recarga para ver cambios', 'info');
-    }
-  }
-
-  // Métodos públicos
-  async clearCache() {
-    if (!this.registration) return false;
-
-    try {
-      const messageChannel = new MessageChannel();
-      
-      return new Promise((resolve) => {
-        messageChannel.port1.onmessage = (event) => {
-          resolve(event.data.success);
-        };
-
-        navigator.serviceWorker.controller.postMessage(
-          { type: 'CLEAR_CACHE' },
-          [messageChannel.port2]
-        );
-      });
-    } catch (error) {
-      console.error('Error limpiando caché:', error);
-      return false;
-    }
-  }
-
-  async getVersion() {
-    if (!this.registration) return null;
-
-    try {
-      const messageChannel = new MessageChannel();
-      
-      return new Promise((resolve) => {
-        messageChannel.port1.onmessage = (event) => {
-          resolve(event.data.version);
-        };
-
-        navigator.serviceWorker.controller.postMessage(
-          { type: 'GET_VERSION' },
-          [messageChannel.port2]
-        );
-      });
-    } catch (error) {
-      console.error('Error obteniendo versión:', error);
-      return null;
-    }
-  }
-
-  async registerSync(tag = 'sync-transactions') {
-    if (!('SyncManager' in window)) {
-      console.warn('Background Sync no soportado');
-      return false;
-    }
-
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      await registration.sync.register(tag);
-      console.log('Background Sync registrado:', tag);
-      return true;
-    } catch (error) {
-      console.error('Error registrando Background Sync:', error);
-      return false;
-    }
+    // Sincronizado con el listener de sw.js: usamos 'action' y 'skipWaiting'
+    this.registration.waiting.postMessage({ action: 'skipWaiting' });
   }
 }
 
-// Instancia global
+// Inicialización
 const swManager = new ServiceWorkerManager();
-
-// Exportar para uso global
-window.ServiceWorkerManager = swManager;
-
-// Inicializar cuando el DOM esté listo
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    window.swManager = swManager;
-  });
-} else {
-  window.swManager = swManager;
-}
+window.swManager = swManager;

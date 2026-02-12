@@ -1,39 +1,68 @@
 /**
  * Service Worker - Cuentas Claras
- * Gestión de modo offline y estrategias de caché
+ * Versión: v3 (Modelo Mensual y Modular)
+ * Estrategia: Network First para archivos locales / Cache First para recursos externos
  */
 
-const VERSION = 'v2.1';
+const VERSION = 'v3';
 const CACHE_NAME = `cuentas-claras-${VERSION}`;
 
-// Archivos esenciales para que la app funcione offline
+// Lista de activos (Rutas mantenidas exactamente según tu configuración)
 const STATIC_ASSETS = [
-    '/',
-    '/index.html',
-    '/manifest.json',
-    '/app.js',
-    '/database.js',
-    '/ui.js',
-    '/calendar.js',
-    '/backup-system.js',
+    './',
+    './index.html',
+    './manifest.json',
+    './sw-registration.js',
+    
+    // Estilos Modularizados
+    './estilos/variables.css',
+    './estilos/base.css',
+    './estilos/layout.css',
+    './estilos/components.css',
+    './estilos/forms.css',
+    './estilos/calendar.css',
+    './estilos/navbar.css',
+    './estilos/theme.css',
+
+    // Motor y Stores de Datos
+    './database.js',
+    './transaction-store.js',
+    './budget-store.js',
+    './category-store.js',
+
+    // Controladores de UI y Reportes
+    './ui-notifications.js',
+    './ui-charts.js',
+    './ui-budget.js',
+    './ui-reports.js',
+    './ui.js',
+
+    // Módulos de Lógica
+    './calendar.js',
+    './cotizador.js',
+    './backup-system.js',
+    './app.js',
+
+    // CDN y Fuentes
     'https://cdn.jsdelivr.net/npm/chart.js',
+    'https://cdn.jsdelivr.net/npm/sweetalert2@11',
     'https://fonts.googleapis.com/icon?family=Material+Icons'
 ];
 
 /**
- * Instalación: Guardar archivos críticos en caché
+ * Instalación: Cacheo de activos y forzado de activación
  */
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            console.log('📦 Almacenando assets estáticos');
+            console.log(`📦 SW ${VERSION}: Almacenando activos estáticos`);
             return cache.addAll(STATIC_ASSETS);
-        }).then(() => self.skipWaiting()) // Forzar activación inmediata
+        }).then(() => self.skipWaiting())
     );
 });
 
 /**
- * Activación: Limpiar versiones viejas de caché
+ * Activación: Limpieza de versiones previas para liberar espacio
  */
 self.addEventListener('activate', (event) => {
     event.waitUntil(
@@ -42,7 +71,7 @@ self.addEventListener('activate', (event) => {
                 keys.filter(key => key !== CACHE_NAME)
                     .map(key => caches.delete(key))
             );
-        }).then(() => self.clients.claim()) // Tomar control de las pestañas abiertas
+        }).then(() => self.clients.claim())
     );
 });
 
@@ -50,23 +79,24 @@ self.addEventListener('activate', (event) => {
  * Intercepción de peticiones (Fetch)
  */
 self.addEventListener('fetch', (event) => {
-    // Solo manejar peticiones GET
     if (event.request.method !== 'GET') return;
 
     const url = new URL(event.request.url);
 
-    // Estrategia: Cache First para fuentes e iconos (rara vez cambian)
-    if (url.origin === 'https://fonts.gstatic.com' || url.origin === 'https://fonts.googleapis.com') {
+    // Estrategia: Cache First para activos externos (Fuentes y CDNs)
+    if (url.origin === 'https://fonts.gstatic.com' || 
+        url.origin === 'https://fonts.googleapis.com' ||
+        url.hostname.includes('cdn.jsdelivr.net')) {
         event.respondWith(cacheFirst(event.request));
         return;
     }
 
-    // Estrategia: Network First para el resto (asegura tener lo último)
+    // Estrategia: Network First para archivos locales (asegura datos frescos)
     event.respondWith(networkFirst(event.request));
 });
 
 /**
- * Estrategia: Primero Red, con caída a Caché
+ * Lógica Network First: Intenta red, si falla busca en caché
  */
 async function networkFirst(request) {
     const cache = await caches.open(CACHE_NAME);
@@ -83,7 +113,7 @@ async function networkFirst(request) {
 }
 
 /**
- * Estrategia: Primero Caché, con caída a Red
+ * Lógica Cache First: Usa caché, si no existe va a red
  */
 async function cacheFirst(request) {
     const cachedResponse = await caches.match(request);
@@ -91,7 +121,7 @@ async function cacheFirst(request) {
 }
 
 /**
- * Mensajería: Recibir comandos desde la app principal
+ * Listener de Mensajes: Control de actualización desde la App
  */
 self.addEventListener('message', (event) => {
     if (event.data.action === 'skipWaiting') {
