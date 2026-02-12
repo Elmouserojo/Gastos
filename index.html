@@ -18,16 +18,14 @@
         document.documentElement.setAttribute('data-theme', savedTheme);
     </script>
 
-<link rel="stylesheet" href="estilos/variables.css">
-<link rel="stylesheet" href="estilos/base.css">
-<link rel="stylesheet" href="estilos/layout.css">
-<link rel="stylesheet" href="estilos/components.css">
-<link rel="stylesheet" href="estilos/forms.css">
-<link rel="stylesheet" href="estilos/calendar.css">
-<link rel="stylesheet" href="estilos/navbar.css">
-<link rel="stylesheet" href="estilos/theme.css">    
-
-<!-- <link rel="stylesheet" href="styles.css"> -->
+    <link rel="stylesheet" href="estilos/variables.css">
+    <link rel="stylesheet" href="estilos/base.css">
+    <link rel="stylesheet" href="estilos/layout.css">
+    <link rel="stylesheet" href="estilos/components.css">
+    <link rel="stylesheet" href="estilos/forms.css">
+    <link rel="stylesheet" href="estilos/calendar.css">
+    <link rel="stylesheet" href="estilos/navbar.css">
+    <link rel="stylesheet" href="estilos/theme.css">    
 
 </head>
 <body>
@@ -60,6 +58,78 @@
                 <div id="budget-progress-container"></div>
 
                 <div class="dashboard-grid">
+                    <div class="card" id="cotizador-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3>Conversor de Divisas</h3>
+                            <button id="update-rates" class="nav-btn-circle" title="Actualizar cotizaciones">
+                                <i class="material-icons" style="font-size: 18px;">refresh</i>
+                            </button>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Monto a convertir</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="number" id="cotizador-input" placeholder="0.00" style="margin-bottom: 0;">
+                                <button id="toggle-direction" class="nav-btn-circle" title="Invertir conversión">
+                                    <i class="material-icons">swap_horiz</i>
+                                </button>
+                            </div>
+                            <small id="direction-label" style="opacity: 0.7; display: block; margin-top: 5px;">ARS ➔ USD</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Tipo de Dólar</label>
+                            <select id="dolar-tipo">
+                                <option value="oficial">Dólar Oficial</option>
+                                <option value="blue" selected>Dólar Blue</option>
+                                <option value="mep">Dólar MEP</option>
+                                <option value="cripto">Dólar Cripto</option>
+                            </select>
+                        </div>
+
+                        <div id="cotizador-result" style="text-align: center; padding: 15px; background: rgba(187, 134, 252, 0.05); border-radius: 8px; border: 1px dashed var(--primary-color);">
+                            <h2 id="result-text" style="color: var(--primary-color);">$ 0,00</h2>
+                            <span id="rate-info" style="font-size: 11px; opacity: 0.6;">Obteniendo tipos de cambio...</span>
+                        </div>
+                    </div>
+
+                    <div class="card" id="monthly-report-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3>Reporte Mensual</h3>
+        <input type="month" id="report-month-picker" class="input-mini">
+    </div>
+
+    <div id="report-content">
+        <div class="balance-container" style="grid-template-columns: 1fr 1fr; margin-bottom: 15px;">
+            <div class="balance-card income" style="padding: 10px;">
+                <p style="font-size: 12px;">Ingresos</p>
+                <h3 id="report-income" style="color: var(--income-color);">$ 0</h3>
+            </div>
+            <div class="balance-card expense" style="padding: 10px;">
+                <p style="font-size: 12px;">Gastos</p>
+                <h3 id="report-expense" style="color: var(--expense-color);">$ 0</h3>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <label style="font-size: 14px;">Capacidad de Ahorro</label>
+                <span id="saving-percentage" style="font-weight: bold; color: var(--primary-color);">0%</span>
+            </div>
+            <div style="width: 100%; height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden;">
+                <div id="saving-bar" style="width: 0%; height: 100%; background: var(--primary-color); transition: width 0.5s ease;"></div>
+            </div>
+            <p id="saving-amount" style="font-size: 11px; margin-top: 5px; opacity: 0.7;">Ahorro: $0.00</p>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <label style="font-size: 14px; display: block; margin-bottom: 10px;">Análisis de Gastos</label>
+            <div id="report-category-list">
+                </div>
+        </div>
+    </div>
+</div>
+
                     <div class="card">
                         <h3>Gastos por Categoría</h3>
                         <div class="chart-wrapper">
@@ -211,6 +281,7 @@
     <script src="./ui.js"></script>
 
     <script src="./calendar.js"></script>
+    <script src="./cotizador.js"></script>
     <script src="./backup-system.js"></script>
     <script src="./sw-registration.js"></script>
     <script src="./app.js"></script>

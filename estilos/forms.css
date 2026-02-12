@@ -34,3 +34,13 @@ select {
     background-size: 16px;
     padding-right: 40px;
 }
+
+.input-mini {
+    width: auto !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    background: var(--surface-color) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px;
+    color: var(--text-primary);
+}

@@ -12,7 +12,8 @@ const ASSETS = [
     './estilos/calendar.css',
     './estilos/navbar.css',
     './estilos/theme.css',
-    
+    './cotizador.js',
+
     './database.js',
     './ui.js',
     './calendar.js',
