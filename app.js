@@ -182,8 +182,8 @@ document.addEventListener('DOMContentLoaded', () => {
         window.calendar = new Calendar();
         window.backupSystem = new BackupSystem({ db: window.db, ui: window.ui });
 
-        window.monthlyReport = new MonthlyReport(window.db);
-        window.monthlyReport.generate();
+        // window.monthlyReport = new MonthlyReport(window.db);
+        // window.monthlyReport.generate();
 
         const app = new App({
             db: window.db,
